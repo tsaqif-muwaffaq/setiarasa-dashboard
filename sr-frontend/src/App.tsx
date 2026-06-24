@@ -1,29 +1,39 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import Login from './pages/Login';
 
-// Placeholder untuk halaman Dashboard (akan kita buat nanti)
-const DashboardPlaceholder = () => (
-  <div className="p-10">
-    <h1 className="text-2xl font-bold">Selamat datang di Dashboard!</h1>
-    <p>Halaman ini akan segera diisi dengan laporan dan statistik.</p>
-  </div>
-);
+// Halaman & Layout
+import Login from './pages/Login';
+import AppLayout from './components/layout/AppLayout';
+import ProtectedRoute from './components/ProtectedRoute';
+
+// Placeholder untuk halaman-halaman dashboard (Akan dibuat di fase berikutnya)
+const Dashboard = () => <div className="text-2xl font-bold text-foreground">Halaman Ringkasan Dashboard</div>;
+const Kasir = () => <div className="text-2xl font-bold text-foreground">Halaman Sistem Kasir (POS)</div>;
+const KelolaMenu = () => <div className="text-2xl font-bold text-foreground">Halaman Kelola Menu Restoran</div>;
 
 function App() {
   return (
     <Router>
-      {/* Komponen Toaster diletakkan di root agar bisa dipanggil dari mana saja */}
       <Toaster position="top-right" richColors />
       
       <Routes>
+        {/* Rute Publik (Tanpa Proteksi) */}
         <Route path="/login" element={<Login />} />
         
-        {/* Nanti kita akan tambahkan sistem Proteksi Route (Protected Route) di sini */}
-        <Route path="/dashboard" element={<DashboardPlaceholder />} />
-        
-        {/* Redirect default ke login */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        {/* Rute Terproteksi (Harus Login) */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/kasir" element={<Kasir />} />
+            <Route path="/dapur" element={<div>Halaman Dapur</div>} />
+            <Route path="/menu" element={<KelolaMenu />} />
+            <Route path="/riwayat" element={<div>Riwayat Transaksi</div>} />
+            <Route path="/karyawan" element={<div>Kelola Karyawan</div>} />
+          </Route>
+        </Route>
+
+        {/* Redirect default */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Router>
   );
