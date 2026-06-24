@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
+import menuRoutes from './routes/menu.routes';
 
 // Muat variabel dari .env
 dotenv.config();
@@ -15,6 +16,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Daftarkan Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/menu', menuRoutes);
 
 // Route Default untuk tes server
 app.get('/', (req: Request, res: Response) => {
