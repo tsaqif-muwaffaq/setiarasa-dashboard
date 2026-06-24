@@ -1,0 +1,74 @@
+// Konfigurasi Client Prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Konfigurasi Database Supabase dengan Connection Pooling
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// --- ENUM (Pilihan Tetap) ---
+enum Role {
+  OWNER
+  KASIR
+  DAPUR
+}
+
+enum OrderStatus {
+  PENDING
+  COOKING
+  COMPLETED
+  CANCELED
+}
+
+// --- MODEL TABEL DATABASE ---
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String   // Akan disimpan dalam bentuk hash bcrypt
+  role      Role     @default(KASIR)
+  createdAt DateTime @default(now())
+}
+
+model Menu {
+  id          String      @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  category    String      // Contoh: "Ayam & Bebek", "Minuman"
+  imageUrl    String      // URL gambar dari Cloudinary
+  stock       Int         @default(0)
+  isAvailable Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  
+  // Relasi ke tabel OrderItem
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  tableNumber String?
+  totalPrice  Float
+  status      OrderStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+  
+  // Relasi ke tabel OrderItem
+  items       OrderItem[]
+}
+
+model OrderItem {
+  id       String @id @default(uuid())
+  orderId  String
+  menuId   String
+  quantity Int
+  price    Float  // Harga saat item dibeli (antisipasi jika harga menu berubah di masa depan)
+  
+  // Relasi (Foreign Keys)
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menu     Menu   @relation(fields: [menuId], references: [id])
+}
