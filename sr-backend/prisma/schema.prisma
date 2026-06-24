@@ -21,7 +21,7 @@ enum OrderStatus {
   PENDING
   COOKING
   COMPLETED
-  CANCELED
+  CANCELLED
 }
 
 // --- MODEL TABEL DATABASE ---
@@ -51,24 +51,25 @@ model Menu {
 }
 
 model Order {
-  id          String      @id @default(uuid())
-  tableNumber String?
-  totalPrice  Float
-  status      OrderStatus @default(PENDING)
-  createdAt   DateTime    @default(now())
+  id            String      @id @default(uuid())
+  customerName  String?     // Nama pelanggan
+  tableNumber   String?        // Nomor meja
+  totalAmount   Float       // Total belanja
+  status        OrderStatus @default(PENDING) // Status awal selalu PENDING
+  createdAt     DateTime    @default(now())
   
-  // Relasi ke tabel OrderItem
-  items       OrderItem[]
+  // Relasi ke detail pesanan
+  items         OrderItem[] 
 }
 
 model OrderItem {
-  id       String @id @default(uuid())
+  id       String  @id @default(uuid())
   orderId  String
   menuId   String
   quantity Int
-  price    Float  // Harga saat item dibeli (antisipasi jika harga menu berubah di masa depan)
+  price    Float   // Disimpan statis agar riwayat tidak rusak jika harga menu berubah
   
   // Relasi (Foreign Keys)
-  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  menu     Menu   @relation(fields: [menuId], references: [id])
+  order    Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menu     Menu    @relation(fields: [menuId], references: [id])
 }

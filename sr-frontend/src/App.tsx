@@ -6,12 +6,14 @@ import Login from './pages/Login';
 import AppLayout from './components/layout/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 
+
 // Import Halaman Asli
 import KelolaMenu from './pages/KelolaMenu';
+import Kasir from './pages/Kasir';
 
 // Placeholder untuk halaman-halaman dashboard lainnya (Akan dibuat di fase berikutnya)
 const Dashboard = () => <div className="text-2xl font-bold text-foreground">Halaman Ringkasan Dashboard</div>;
-const Kasir = () => <div className="text-2xl font-bold text-foreground">Halaman Sistem Kasir (POS)</div>;
+
 
 function App() {
   return (
@@ -28,6 +30,7 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/kasir" element={<Kasir />} />
             <Route path="/dapur" element={<div>Halaman Dapur</div>} />
+            
             
             {/* Rute ini sekarang memanggil komponen KelolaMenu yang asli */}
             <Route path="/menu" element={<KelolaMenu />} />
