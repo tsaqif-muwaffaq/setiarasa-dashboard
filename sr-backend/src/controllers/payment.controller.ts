@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
 import midtransClient from 'midtrans-client';
-import { PrismaClient, OrderStatus, PaymentMethod } from '@prisma/client';
+import { OrderStatus, PaymentMethod } from '@prisma/client';
 import crypto from 'crypto';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 const snap = new midtransClient.Snap({
   isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',

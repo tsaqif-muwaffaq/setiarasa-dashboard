@@ -1,9 +1,7 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 const JWT_SECRET = process.env.JWT_SECRET || 'rahasia_setiarasa_aman_123'; // Pastikan ada di file .env nantinya
 
 export const login = async (req: Request, res: Response): Promise<void> => {

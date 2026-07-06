@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import cloudinary from '../config/cloudinary';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 // ------------------------------------------------------------------
 // FIX: Buat interface khusus agar TypeScript mengenali properti 'file'

@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 // --- 1. Ambil Semua Daftar Karyawan ---
 export const getAllUsers = async (req: Request, res: Response): Promise<void> => {

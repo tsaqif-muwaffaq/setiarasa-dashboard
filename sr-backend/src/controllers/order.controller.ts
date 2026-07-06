@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
-import { PrismaClient, OrderStatus, PaymentMethod } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { OrderStatus, PaymentMethod } from '@prisma/client';
+import prisma from '../lib/prisma';
 
 // Batas waktu pembayaran non-tunai (menit) sebelum pesanan otomatis dianggap kedaluwarsa.
 // Metode CASH tidak kena auto-expired karena menunggu konfirmasi manual dari kasir (lihat confirmCashPayment).
@@ -30,14 +29,14 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
     const source = isPublic ? 'ONLINE' : 'OFFLINE';
 
     const newOrder = await prisma.$transaction(async (tx) => {
-      // A. Validasi Stok Ketat
-      for (const item of items) {
+      // A. Validasi Stok Ketat (Paralel menggunakan Promise.all)
+      await Promise.all(items.map(async (item: any) => {
         const menuInfo = await tx.menu.findUnique({ where: { id: item.menuId } });
         if (!menuInfo) throw new Error(`Menu dengan ID ${item.menuId} tidak ditemukan.`);
         if (menuInfo.stock < item.quantity) {
           throw new Error(`Gagal: Stok "${menuInfo.name}" tidak mencukupi! Sisa: ${menuInfo.stock}`);
         }
-      }
+      }));
 
       // B. Buat Record Order Utama dengan field source
       const order = await tx.order.create({
@@ -60,15 +59,18 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
         include: { items: true }
       });
 
-      // C. Kurangi Stok Secara Aman
-      for (const item of items) {
-        await tx.menu.update({
+      // C. Kurangi Stok Secara Aman (Paralel menggunakan Promise.all)
+      await Promise.all(items.map((item: any) =>
+        tx.menu.update({
           where: { id: item.menuId },
           data: { stock: { decrement: item.quantity } }
-        });
-      }
+        })
+      ));
 
       return order;
+    }, {
+      maxWait: 15000, // Waktu tunggu mendapatkan koneksi dari pool (15 detik)
+      timeout: 30000, // Batas waktu total eksekusi transaksi (30 detik)
     });
 
     res.status(201).json({ success: true, message: 'Pesanan berhasil dibuat', data: newOrder });
