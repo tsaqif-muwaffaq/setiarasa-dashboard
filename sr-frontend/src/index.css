@@ -5,74 +5,1764 @@
 
 @layer base {
   :root {
-    /* Latar belakang utama (Terang/Abu-abu sangat muda) */
-    --background: 0 0% 98%;
-    --foreground: 215 28% 17%; /* Teks warna Dark Slate (bukan hitam murni) */
+    --background: 45 100% 98%;
+    --foreground: 240 6% 10%;
 
-    /* WARNA UTAMA: Merah Bata Setia Rasa */
-    --primary: 6 78% 57%; 
-    --primary-foreground: 0 0% 100%; /* Teks putih di atas tombol merah */
+    --primary: 163 88% 20%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Warna Sekunder (Card abu-abu muda) */
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 215 28% 17%;
+    --secondary: 45 100% 98%;
+    --secondary-foreground: 240 6% 10%;
 
-    /* WARNA AKSEN: Hijau Terang (Untuk tombol aksi/sukses) */
-    --accent: 142 71% 45%; 
-    --accent-foreground: 0 0% 100%;
+    --muted: 45 62% 93%;
+    --muted-foreground: 240 4% 38%;
 
-    /* Warna Destructive (Tombol Hapus/Batal) */
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --accent: 45 67% 47%;
+    --accent-foreground: 240 6% 10%;
 
-    /* Border & Input Outline */
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 6 78% 57%; /* Efek ring saat input diklik menyesuaikan warna merah utama */
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 100%;
 
-    /* Background komponen Card & Popover */
+    --border: 45 67% 47%;
+    --input: 45 67% 47%;
+    --ring: 163 88% 20%;
+
     --card: 0 0% 100%;
-    --card-foreground: 215 28% 17%;
+    --card-foreground: 240 6% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 215 28% 17%;
+    --popover-foreground: 240 6% 10%;
 
     --radius: 0.5rem;
   }
 
   .dark {
-    /* TEMA GELAP: Menggunakan Biru Dongker / Dark Slate dari Header web asli */
-    --background: 215 28% 17%;
-    --foreground: 210 40% 98%;
+    --background: 240 6% 10%;
+    --foreground: 45 100% 98%;
 
-    /* Merah Bata tetap dipertahankan di Dark Mode */
-    --primary: 6 78% 57%;
+    --primary: 163 88% 24%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 25%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 0 63% 22%;
+    --secondary-foreground: 45 100% 98%;
 
-    --accent: 142 71% 45%;
-    --accent-foreground: 0 0% 100%;
+    --muted: 240 5% 18%;
+    --muted-foreground: 45 35% 76%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --accent: 45 67% 53%;
+    --accent-foreground: 240 6% 10%;
 
-    --border: 217.2 32.6% 25%;
-    --input: 217.2 32.6% 25%;
-    --ring: 6 78% 57%;
+    --destructive: 0 63% 36%;
+    --destructive-foreground: 0 0% 100%;
 
-    --card: 215 28% 22%;
-    --card-foreground: 210 40% 98%;
-    --popover: 215 28% 17%;
-    --popover-foreground: 210 40% 98%;
+    --border: 45 67% 53%;
+    --input: 45 67% 53%;
+    --ring: 163 88% 28%;
+
+    --card: 240 5% 14%;
+    --card-foreground: 45 100% 98%;
+    --popover: 240 5% 14%;
+    --popover-foreground: 45 100% 98%;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
+  }
+  html {
+    background-color: hsl(var(--background));
+  }
+  html,
+  body,
+  #root {
+    min-height: 100%;
   }
   body {
-    @apply bg-background text-foreground font-sans;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s, color 0.3s;
   }
+  ::selection {
+    background-color: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+  }
+}
+
+/* ============================================
+   ANIMASI & PATTERN BARU
+   ============================================ */
+
+/* ── 1. Pattern Background ── */
+.bg-pattern {
+  background-image: 
+    radial-gradient(circle at 20% 50%, hsl(var(--accent) / 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 50%, hsl(var(--primary) / 0.03) 0%, transparent 50%),
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 40px,
+      hsl(var(--accent) / 0.02) 40px,
+      hsl(var(--accent) / 0.02) 41px
+    );
+}
+
+.dark .bg-pattern {
+  background-image: 
+    radial-gradient(circle at 20% 50%, hsl(var(--accent) / 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 50%, hsl(var(--primary) / 0.05) 0%, transparent 50%),
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 40px,
+      hsl(var(--accent) / 0.03) 40px,
+      hsl(var(--accent) / 0.03) 41px
+    );
+}
+
+/* ── 2. Pola Diagonal Subtle ── */
+.bg-diagonal-pattern {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 2px,
+    hsl(var(--accent) / 0.02) 2px,
+    hsl(var(--accent) / 0.02) 4px
+  );
+}
+
+.dark .bg-diagonal-pattern {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 2px,
+    hsl(var(--accent) / 0.03) 2px,
+    hsl(var(--accent) / 0.03) 4px
+  );
+}
+
+/* ── 3. Pola Dot Grid ── */
+.bg-dot-grid {
+  background-image: radial-gradient(hsl(var(--accent) / 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.dark .bg-dot-grid {
+  background-image: radial-gradient(hsl(var(--accent) / 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ── 4. Animasi Fade In Up ── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in-up-delay-1 {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-up-delay-2 {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-up-delay-3 {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-up-delay-4 {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
+  opacity: 0;
+}
+
+/* ── 5. Animasi Float ── */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-float-delay-1 {
+  animation: float 4s ease-in-out 0.5s infinite;
+}
+
+.animate-float-delay-2 {
+  animation: float 4s ease-in-out 1s infinite;
+}
+
+/* ── 6. Animasi Pulse Soft ── */
+@keyframes pulseSoft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulseSoft 3s ease-in-out infinite;
+}
+
+/* ── 7. Animasi Shimmer ── */
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--accent) / 0.05) 25%,
+    hsl(var(--accent) / 0.10) 50%,
+    hsl(var(--accent) / 0.05) 75%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 4s ease-in-out infinite;
+}
+
+/* ── 8. Glow Effect on Hover ── */
+.hover-glow {
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 40px hsl(var(--accent) / 0.10), 6px 6px 0px hsl(var(--border));
+  transform: translateY(-2px);
+}
+
+.dark .hover-glow:hover {
+  box-shadow: 0 0 40px hsl(var(--accent) / 0.15), 6px 6px 0px hsl(var(--border));
+}
+
+/* ── 9. Corner Accent ── */
+.corner-accent {
+  position: relative;
+}
+
+.corner-accent::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: 40px;
+  height: 40px;
+  border-top: 4px solid hsl(var(--accent));
+  border-left: 4px solid hsl(var(--accent));
+  opacity: 0.4;
+  transition: opacity 0.3s ease, width 0.3s ease, height 0.3s ease;
+}
+
+.corner-accent:hover::before {
+  opacity: 0.8;
+  width: 60px;
+  height: 60px;
+}
+
+.corner-accent::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 40px;
+  height: 40px;
+  border-bottom: 4px solid hsl(var(--accent));
+  border-right: 4px solid hsl(var(--accent));
+  opacity: 0.4;
+  transition: opacity 0.3s ease, width 0.3s ease, height 0.3s ease;
+}
+
+.corner-accent:hover::after {
+  opacity: 0.8;
+  width: 60px;
+  height: 60px;
+}
+
+/* ── 10. Border Gradient Animasi ── */
+@keyframes borderGlow {
+  0%, 100% {
+    border-color: hsl(var(--border));
+  }
+  50% {
+    border-color: hsl(var(--accent));
+  }
+}
+
+.animate-border-glow {
+  animation: borderGlow 3s ease-in-out infinite;
+}
+
+/* ── 11. Rotating Ring ── */
+@keyframes spinRing {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-ring {
+  animation: spinRing 8s linear infinite;
+}
+
+/* ── 12. Scale Bounce on Hover ── */
+.hover-scale-bounce {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hover-scale-bounce:hover {
+  transform: scale(1.05);
+}
+
+.hover-scale-bounce:active {
+  transform: scale(0.95);
+}
+
+/* ── 13. Slide In From Side ── */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in-left-delay-1 {
+  animation: slideInLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+  opacity: 0;
+}
+
+/* ── 14. Grain Texture ── */
+.bg-grain {
+  position: relative;
+}
+
+.bg-grain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dark .bg-grain::before {
+  opacity: 0.05;
+}
+
+/* ── 15. Card Hover Lift ── */
+.card-lift {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 8px 8px 0px hsl(var(--border));
+}
+
+.dark .card-lift:hover {
+  box-shadow: 8px 8px 0px hsl(var(--border));
+}
+
+/* ============================================
+   PERBAIKAN TEMA GELAP
+   ============================================ */
+
+/* ... (kode tema gelap sebelumnya tetap sama) ... */
+
+/* Background dengan gradasi halus untuk dark mode */
+.dark .bg-background {
+  background: linear-gradient(
+    180deg,
+    hsl(240, 6%, 8%) 0%,
+    hsl(240, 6%, 10%) 50%,
+    hsl(240, 6%, 6%) 100%
+  );
+}
+
+/* Card dengan gradasi lebih dalam di dark mode */
+.dark .bg-\[var\(--card\)\] {
+  background: linear-gradient(
+    145deg,
+    hsl(240, 5%, 12%) 0%,
+    hsl(240, 5%, 16%) 50%,
+    hsl(240, 5%, 10%) 100%
+  );
+}
+
+/* Perbaikan warna teks di dark mode */
+.dark .text-\[\#18181B\] {
+  color: hsl(45, 100%, 95%) !important;
+}
+
+.dark .text-\[\#18181B\]\/70 {
+  color: hsl(45, 100%, 85%) !important;
+}
+
+.dark .text-\[\#18181B\]\/50 {
+  color: hsl(45, 100%, 75%) !important;
+}
+
+.dark .text-\[\#18181B\]\/40 {
+  color: hsl(45, 100%, 65%) !important;
+}
+
+.dark .text-\[\#18181B\]\/30 {
+  color: hsl(45, 100%, 55%) !important;
+}
+
+.dark .text-\[\#18181B\]\/20 {
+  color: hsl(45, 100%, 40%) !important;
+}
+
+/* Perbaikan warna border di dark mode */
+.dark .border-\[\#18181B\] {
+  border-color: hsl(45, 67%, 35%) !important;
+}
+
+.dark .border-\[\#18181B\]\/20 {
+  border-color: hsla(45, 67%, 45%, 0.15) !important;
+}
+
+.dark .border-\[\#18181B\]\/10 {
+  border-color: hsla(45, 67%, 45%, 0.08) !important;
+}
+
+.dark .border-2.border-\[\#18181B\] {
+  border-color: hsl(45, 67%, 35%) !important;
+}
+
+.dark .border-4.border-\[\#18181B\] {
+  border-color: hsl(45, 67%, 35%) !important;
+}
+
+/* Shadow yang lebih soft di dark mode */
+.dark .shadow-\[6px_6px_0px_\#18181B\] {
+  box-shadow: 6px 6px 0px hsl(45, 67%, 25%) !important;
+}
+
+.dark .shadow-\[12px_12px_0px_\#18181B\] {
+  box-shadow: 12px 12px 0px hsl(45, 67%, 20%) !important;
+}
+
+.dark .shadow-\[4px_4px_0px_\#18181B\] {
+  box-shadow: 4px 4px 0px hsl(45, 67%, 25%) !important;
+}
+
+.dark .shadow-\[3px_3px_0px_\#18181B\] {
+  box-shadow: 3px 3px 0px hsl(45, 67%, 25%) !important;
+}
+
+.dark .shadow-\[2px_2px_0px_\#18181B\] {
+  box-shadow: 2px 2px 0px hsl(45, 67%, 25%) !important;
+}
+
+/* Perbaikan background cards di dark mode */
+.dark .bg-\[\#FFFDF7\] {
+  background: linear-gradient(
+    145deg,
+    hsl(240, 5%, 10%) 0%,
+    hsl(240, 5%, 14%) 50%,
+    hsl(240, 5%, 8%) 100%
+  ) !important;
+}
+
+.dark .bg-\[\#E7D9B8\] {
+  background: linear-gradient(
+    145deg,
+    hsl(45, 20%, 15%) 0%,
+    hsl(45, 20%, 20%) 50%,
+    hsl(45, 20%, 12%) 100%
+  ) !important;
+}
+
+/* Perbaikan warna accent di dark mode */
+.dark .bg-\[\#C9A227\] {
+  background: linear-gradient(
+    145deg,
+    hsl(45, 67%, 40%) 0%,
+    hsl(45, 67%, 35%) 50%,
+    hsl(45, 67%, 45%) 100%
+  ) !important;
+}
+
+.dark .bg-\[\#C9A227\]\/10 {
+  background: hsla(45, 67%, 50%, 0.08) !important;
+}
+
+.dark .bg-\[\#C9A227\]\/20 {
+  background: hsla(45, 67%, 50%, 0.15) !important;
+}
+
+.dark .text-\[\#C9A227\] {
+  color: hsl(45, 67%, 55%) !important;
+}
+
+/* Perbaikan warna primary (hijau) di dark mode */
+.dark .bg-\[\#065F46\] {
+  background: linear-gradient(
+    145deg,
+    hsl(163, 88%, 20%) 0%,
+    hsl(163, 88%, 15%) 50%,
+    hsl(163, 88%, 25%) 100%
+  ) !important;
+}
+
+.dark .bg-\[\#065F46\]\/10 {
+  background: hsla(163, 88%, 30%, 0.10) !important;
+}
+
+.dark .bg-\[\#065F46\]\/30 {
+  background: hsla(163, 88%, 30%, 0.25) !important;
+}
+
+.dark .text-\[\#065F46\] {
+  color: hsl(163, 88%, 45%) !important;
+}
+
+.dark .text-\[\#34D399\] {
+  color: hsl(163, 88%, 55%) !important;
+}
+
+/* Perbaikan warna destructive (merah) di dark mode */
+.dark .bg-\[\#7F1D1D\] {
+  background: linear-gradient(
+    145deg,
+    hsl(0, 63%, 22%) 0%,
+    hsl(0, 63%, 16%) 50%,
+    hsl(0, 63%, 28%) 100%
+  ) !important;
+}
+
+.dark .bg-\[\#7F1D1D\]\/10 {
+  background: hsla(0, 63%, 30%, 0.10) !important;
+}
+
+.dark .bg-\[\#7F1D1D\]\/30 {
+  background: hsla(0, 63%, 30%, 0.25) !important;
+}
+
+.dark .text-\[\#7F1D1D\] {
+  color: hsl(0, 63%, 55%) !important;
+}
+
+/* Perbaikan input di dark mode */
+.dark input,
+.dark select,
+.dark textarea {
+  background: linear-gradient(
+    145deg,
+    hsl(240, 5%, 8%) 0%,
+    hsl(240, 5%, 12%) 100%
+  ) !important;
+  border-color: hsl(45, 67%, 30%) !important;
+  color: hsl(45, 100%, 95%) !important;
+}
+
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+  border-color: hsl(45, 67%, 50%) !important;
+  box-shadow: 0 0 20px hsla(45, 67%, 50%, 0.1) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: hsl(45, 100%, 65%) !important;
+}
+
+/* Hover effects untuk dark mode */
+.dark .hover\:bg-\[\#C9A227\]\/20:hover {
+  background-color: hsla(45, 67%, 50%, 0.12) !important;
+}
+
+.dark .hover\:bg-\[\#C9A227\]\/10:hover {
+  background-color: hsla(45, 67%, 50%, 0.06) !important;
+}
+
+.dark .hover\:bg-\[\#FFFDF7\]:hover {
+  background: linear-gradient(
+    145deg,
+    hsl(240, 5%, 14%) 0%,
+    hsl(240, 5%, 18%) 50%,
+    hsl(240, 5%, 12%) 100%
+  ) !important;
+}
+
+.dark .hover\:text-\[\#FFFDF7\]:hover {
+  color: hsl(45, 100%, 98%) !important;
+}
+
+/* Scrollbar untuk dark mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: hsl(240, 5%, 10%);
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    hsl(45, 67%, 30%) 0%,
+    hsl(45, 67%, 20%) 100%
+  );
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    hsl(45, 67%, 40%) 0%,
+    hsl(45, 67%, 30%) 100%
+  );
+}
+
+/* Perbaikan untuk tabel di dark mode */
+.dark .border-b-2.border-\[\#18181B\] {
+  border-bottom-color: hsl(45, 67%, 30%) !important;
+}
+
+.dark .border-b-2.border-\[\#18181B\]\/20 {
+  border-bottom-color: hsla(45, 67%, 45%, 0.10) !important;
+}
+
+.dark .border-t-2.border-\[\#18181B\] {
+  border-top-color: hsl(45, 67%, 30%) !important;
+}
+
+/* Perbaikan untuk badge di dark mode */
+.dark .border-\[\#18181B\]\/20 {
+  border-color: hsla(45, 67%, 45%, 0.15) !important;
+}
+
+/* Efek hover shadow untuk dark mode */
+.dark .hover\:shadow-\[10px_10px_0px_\#18181B\]:hover {
+  box-shadow: 10px 10px 0px hsl(45, 67%, 20%) !important;
+}
+
+.dark .hover\:shadow-\[8px_8px_0px_\#18181B\]:hover {
+  box-shadow: 8px 8px 0px hsl(45, 67%, 20%) !important;
+}
+
+/* Perbaikan untuk teks muted di dark mode */
+.dark .text-\[\#18181B\]\/70 {
+  color: hsl(45, 100%, 85%) !important;
+}
+
+.dark .text-\[\#18181B\]\/50 {
+  color: hsl(45, 100%, 75%) !important;
+}
+
+.dark .text-\[\#18181B\]\/30 {
+  color: hsl(45, 100%, 60%) !important;
+}
+
+/* Efek glow untuk elemen aktif di dark mode */
+.dark .border-2.border-\[\#18181B\].bg-\[\#C9A227\] {
+  background: linear-gradient(
+    145deg,
+    hsl(45, 67%, 45%) 0%,
+    hsl(45, 67%, 38%) 50%,
+    hsl(45, 67%, 50%) 100%
+  ) !important;
+  box-shadow: 
+    4px 4px 0px hsl(45, 67%, 25%),
+    0 0 30px hsla(45, 67%, 50%, 0.1) !important;
+}
+
+/* Animasi tambahan untuk dark mode */
+@keyframes glowPulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.dark .animate-glow {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+/* ============================================
+   PERBAIKAN CHART / GRAFIK DI DARK MODE
+   ============================================ */
+
+/* Perbaikan untuk Recharts di dark mode */
+.dark .recharts-cartesian-axis-tick-value,
+.dark .recharts-cartesian-axis-tick text,
+.dark .recharts-text {
+  fill: hsl(45, 100%, 90%) !important;
+}
+
+.dark .recharts-cartesian-axis-line {
+  stroke: hsl(45, 67%, 30%) !important;
+}
+
+.dark .recharts-cartesian-grid-horizontal line,
+.dark .recharts-cartesian-grid-vertical line {
+  stroke: hsla(45, 67%, 45%, 0.15) !important;
+}
+
+.dark .recharts-tooltip-wrapper {
+  background: hsl(240, 5%, 12%) !important;
+  border: 2px solid hsl(45, 67%, 35%) !important;
+  border-radius: 0px !important;
+  box-shadow: 6px 6px 0px hsl(45, 67%, 25%) !important;
+}
+
+.dark .recharts-tooltip-wrapper .recharts-tooltip-label {
+  color: hsl(45, 100%, 90%) !important;
+  font-weight: bold !important;
+}
+
+.dark .recharts-tooltip-wrapper .recharts-tooltip-item {
+  color: hsl(45, 100%, 85%) !important;
+}
+
+.dark .recharts-tooltip-wrapper .recharts-tooltip-item-name {
+  color: hsl(45, 100%, 75%) !important;
+}
+
+.dark .recharts-tooltip-wrapper .recharts-tooltip-item-value {
+  color: hsl(45, 67%, 55%) !important;
+  font-weight: bold !important;
+}
+
+/* Perbaikan untuk legend di dark mode */
+.dark .recharts-legend-item-text {
+  color: hsl(45, 100%, 85%) !important;
+}
+
+/* Perbaikan untuk label di dalam chart */
+.dark .recharts-label {
+  fill: hsl(45, 100%, 90%) !important;
+}
+
+/* Perbaikan untuk bar chart */
+.dark .recharts-bar-rectangle {
+  filter: drop-shadow(0 2px 8px hsla(0, 63%, 30%, 0.3));
+}
+
+/* Perbaikan untuk line chart */
+.dark .recharts-line-curve {
+  filter: drop-shadow(0 2px 8px hsla(0, 63%, 30%, 0.2));
+}
+
+.dark .recharts-line-dot {
+  stroke: hsl(45, 100%, 95%) !important;
+  fill: hsl(240, 5%, 12%) !important;
+}
+
+.dark .recharts-line-active-dot {
+  stroke: hsl(45, 67%, 55%) !important;
+  fill: hsl(45, 67%, 55%) !important;
+}
+
+/* Perbaikan untuk XAxis dan YAxis di dark mode */
+.dark .recharts-xAxis .recharts-cartesian-axis-tick-value,
+.dark .recharts-yAxis .recharts-cartesian-axis-tick-value {
+  fill: hsl(45, 100%, 85%) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+}
+
+/* Perbaikan untuk axis line dan ticks */
+.dark .recharts-xAxis .recharts-cartesian-axis-line,
+.dark .recharts-yAxis .recharts-cartesian-axis-line {
+  stroke: hsl(45, 67%, 30%) !important;
+}
+
+.dark .recharts-xAxis .recharts-cartesian-axis-tick-line,
+.dark .recharts-yAxis .recharts-cartesian-axis-tick-line {
+  stroke: hsl(45, 67%, 30%) !important;
+}
+
+/* Tooltip dengan style neubrutalism di dark mode */
+.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: hsl(240, 5%, 12%) !important;
+  border: 3px solid hsl(45, 67%, 35%) !important;
+  border-radius: 0px !important;
+  padding: 12px !important;
+  box-shadow: 6px 6px 0px hsl(45, 67%, 25%) !important;
+}
+
+.dark .recharts-tooltip-wrapper .recharts-tooltip-label {
+  color: hsl(45, 100%, 95%) !important;
+  font-weight: 900 !important;
+  font-size: 12px !important;
+  margin-bottom: 4px !important;
+}
+
+.dark .recharts-tooltip-wrapper .recharts-tooltip-item {
+  color: hsl(45, 100%, 85%) !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  padding: 2px 0 !important;
+}
+
+/* Perbaikan untuk custom cursor di chart */
+.dark .recharts-cartesian-axis-cursor {
+  stroke: hsla(45, 67%, 45%, 0.3) !important;
+}
+
+/* Tambahan untuk memastikan angka di chart terbaca */
+@media (prefers-color-scheme: dark) {
+  .recharts-cartesian-axis-tick-value,
+  .recharts-cartesian-axis-tick text,
+  .recharts-text {
+    fill: #e8e0d0 !important;
+  }
+}
+
+/* ============================================
+   PERBAIKAN FONT & TYPOGRAPHY PROFESIONAL
+   ============================================ */
+
+/* Ukuran font lebih hierarkis */
+h1 {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+}
+
+h2 {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+}
+
+h3 {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+h4 {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+/* Warna heading yang lebih jelas di dark mode */
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4 {
+  color: #FFFDF7;
+}
+
+/* Teks body lebih enak dibaca */
+body {
+  font-size: 0.875rem;
+  line-height: 1.625;
+}
+
+/* ============================================
+   PERBAIKAN WARNA ELEMEN DI LIGHT & DARK MODE
+   ============================================ */
+
+/* Warna accent emas yang lebih profesional */
+.bg-accent-gold {
+  background: linear-gradient(145deg, #D4AF37, #C9A227, #B8961F);
+}
+
+.dark .bg-accent-gold {
+  background: linear-gradient(145deg, #D4AF37, #C9A227, #B8961F);
+}
+
+/* Warna primary hijau yang lebih profesional */
+.bg-primary-green {
+  background: linear-gradient(145deg, #0A7A5C, #065F46, #044A34);
+}
+
+.dark .bg-primary-green {
+  background: linear-gradient(145deg, #0A7A5C, #065F46, #044A34);
+}
+
+/* Warna destructive merah yang lebih profesional */
+.bg-destructive-red {
+  background: linear-gradient(145deg, #9B2226, #7F1D1D, #661818);
+}
+
+.dark .bg-destructive-red {
+  background: linear-gradient(145deg, #9B2226, #7F1D1D, #661818);
+}
+
+/* Warna card background yang lebih bersih */
+.bg-card-clean {
+  background-color: #FFFDF7;
+}
+
+.dark .bg-card-clean {
+  background-color: #1A1A1E;
+}
+
+/* Border yang lebih halus */
+.border-soft {
+  border-color: rgba(24, 24, 27, 0.2);
+}
+
+.dark .border-soft {
+  border-color: rgba(255, 253, 247, 0.2);
+}
+
+/* ============================================
+   PERBAIKAN LAYOUT & SPACING
+   ============================================ */
+
+/* Container yang lebih rapi */
+.container-nice {
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-nice {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-nice {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* Card spacing yang lebih baik */
+.card-nice {
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .card-nice {
+    padding: 1.5rem;
+  }
+}
+
+/* ============================================
+   DARK MODE PROFESIONAL - CLEAN VERSION
+   Gabungan semua permintaan dalam 1 blok
+   ============================================ */
+
+/* Warna merah brick - SAMA DENGAN GRAFIK */
+:root {
+  --red-brick: #8B3A3A;
+  --red-brick-light: #9A4A4A;
+  --red-brick-dark: #6A2A2A;
+  --red-brick-bg: rgba(139, 58, 58, 0.15);
+  --red-icon-bright: #7A3535;
+  --red-icon-hover: #8A4040;
+}
+
+/* ============================================
+   1. BACKGROUND & CARD - DARK GRAY
+   ============================================ */
+
+.dark {
+  --background: 220 15% 14%;
+  --foreground: 220 15% 92%;
+  --primary: 160 60% 28%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 15% 18%;
+  --secondary-foreground: 220 15% 92%;
+  --muted: 220 12% 22%;
+  --muted-foreground: 220 10% 70%;
+  --accent: 40 30% 45%;
+  --accent-foreground: 220 15% 95%;
+  --destructive: 0 45% 38%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 220 12% 26%;
+  --input: 220 12% 26%;
+  --ring: 160 60% 38%;
+  --card: 220 15% 17%;
+  --card-foreground: 220 15% 92%;
+  --popover: 220 15% 17%;
+  --popover-foreground: 220 15% 92%;
+}
+
+.dark body,
+.dark .bg-background,
+.dark .bg-\[\#FFFDF7\] {
+  background: #1a1e26 !important;
+}
+
+.dark .bg-\[\#FFFDF7\],
+.dark .bg-\[var\(--card\)\],
+.dark .bg-card-clean {
+  background: #232833 !important;
+}
+
+.dark .bg-\[\#E7D9B8\] {
+  background: #2a303d !important;
+}
+
+/* ============================================
+   2. BORDER & SHADOW
+   ============================================ */
+
+.dark .border-\[\#18181B\],
+.dark .border-2.border-\[\#18181B\],
+.dark .border-4.border-\[\#18181B\] {
+  border-color: #2d3440 !important;
+}
+
+.dark .border-\[\#18181B\]\/20 {
+  border-color: rgba(45, 52, 64, 0.4) !important;
+}
+
+.dark .border-\[\#18181B\]\/10 {
+  border-color: rgba(45, 52, 64, 0.25) !important;
+}
+
+.dark .shadow-\[6px_6px_0px_\#18181B\],
+.dark .shadow-\[12px_12px_0px_\#18181B\],
+.dark .shadow-\[4px_4px_0px_\#18181B\],
+.dark .shadow-\[3px_3px_0px_\#18181B\],
+.dark .shadow-\[2px_2px_0px_\#18181B\],
+.dark .shadow-\[8px_8px_0px_\#18181B\],
+.dark .shadow-\[10px_10px_0px_\#18181B\],
+.dark .shadow-\[-8px_0_0px_\#18181B\] {
+  box-shadow: 6px 6px 0px #1a1e26 !important;
+}
+
+/* ============================================
+   3. TEKS - KONTRAST BAIK
+   ============================================ */
+
+.dark .text-\[\#18181B\] {
+  color: #e8edf5 !important;
+}
+
+.dark .text-\[\#18181B\]\/70 {
+  color: #b0b8c8 !important;
+}
+
+.dark .text-\[\#18181B\]\/50 {
+  color: #8892a8 !important;
+}
+
+.dark .text-\[\#18181B\]\/40 {
+  color: #6b7488 !important;
+}
+
+.dark .text-\[\#18181B\]\/30 {
+  color: #4d5566 !important;
+}
+
+.dark .text-\[\#18181B\]\/20 {
+  color: #3a4050 !important;
+}
+
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4 {
+  color: #e8edf5;
+}
+
+/* ============================================
+   4. WARNA MERAH - SAMA SEPERTI GRAFIK (#8B3A3A)
+   ============================================ */
+
+/* SIDEBAR */
+.dark aside.bg-\[\#7F1D1D\] {
+  background: #4A2828 !important;
+  background: linear-gradient(180deg, #4A2828 0%, #3A1E1E 100%) !important;
+}
+
+.dark aside a.bg-\[\#C9A227\],
+.dark aside a[class*="bg-\[\#C9A227\""] {
+  background: #6A2A2A !important;
+  border-color: #4A2020 !important;
+  color: #ffffff !important;
+}
+
+.dark aside a.bg-\[\#C9A227\] svg,
+.dark aside a[class*="bg-\[\#C9A227\""] svg {
+  color: #ffffff !important;
+}
+
+/* TABEL HEADER */
+.dark thead .bg-\[\#7F1D1D\],
+.dark th.bg-\[\#7F1D1D\],
+.dark .border-b-2.border-\[\#18181B\].bg-\[\#7F1D1D\] {
+  background: #6A2A2A !important;
+}
+
+.dark thead th {
+  color: #ffffff !important;
+}
+
+/* BUTTON & BADGE */
+.dark button.bg-\[\#7F1D1D\],
+.dark a.bg-\[\#7F1D1D\],
+.dark .bg-\[\#7F1D1D\],
+.dark .bg-\[\#7F1D1D\].text-\[\#FFFDF7\],
+.dark button.border-4.border-\[\#18181B\].bg-\[\#7F1D1D\],
+.dark button.bg-\[\#7F1D1D\].text-\[\#FFFDF7\] {
+  background: #6A2A2A !important;
+  border-color: #4A2020 !important;
+  color: #ffffff !important;
+}
+
+.dark button.bg-\[\#7F1D1D\]:hover {
+  background: #7A3232 !important;
+}
+
+.dark .text-\[\#7F1D1D\] {
+  color: #B86A6A !important;
+}
+
+.dark .border-\[\#7F1D1D\] {
+  border-color: #6A2A2A !important;
+}
+
+.dark .bg-\[\#7F1D1D\]\/10 {
+  background: rgba(139, 58, 58, 0.12) !important;
+}
+
+.dark .bg-\[\#7F1D1D\]\/30 {
+  background: rgba(139, 58, 58, 0.25) !important;
+}
+
+.dark .border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10 {
+  background: rgba(139, 58, 58, 0.12) !important;
+  border-color: #6A2A2A !important;
+  color: #B86A6A !important;
+}
+
+/* DELETE BUTTON */
+.dark button.border-2.border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10 {
+  background: rgba(139, 58, 58, 0.12) !important;
+  border-color: #6A2A2A !important;
+  color: #B86A6A !important;
+}
+
+.dark button.border-2.border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10:hover {
+  background: rgba(139, 58, 58, 0.25) !important;
+}
+
+/* ============================================
+   5. ICON BOX - BRIGHTNESS DITINGKATKAN
+   ============================================ */
+
+/* Icon box ukuran 12 (h-12 w-12) */
+.dark .flex.h-12.w-12.border-2.border-\[\#18181B\].bg-\[\#C9A227\],
+.dark .flex.h-12.w-12.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] {
+  background: #7A3535 !important;
+  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
+  border-color: #4A2020 !important;
+  box-shadow: 3px 3px 0px #2A1818 !important;
+}
+
+.dark .flex.h-12.w-12.border-2.border-\[\#18181B\].bg-\[\#C9A227\] svg,
+.dark .flex.h-12.w-12.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] svg {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* Icon box ukuran 10 (h-10 w-10) */
+.dark .flex.h-10.w-10.border-2.border-\[\#18181B\].bg-\[\#C9A227\],
+.dark .flex.h-10.w-10.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\],
+.dark .flex.h-10.w-10.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] {
+  background: #7A3535 !important;
+  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
+  border-color: #4A2020 !important;
+  box-shadow: 3px 3px 0px #2A1818 !important;
+}
+
+.dark .flex.h-10.w-10.border-2.border-\[\#18181B\].bg-\[\#C9A227\] svg,
+.dark .flex.h-10.w-10.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] svg {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* ============================================
+   6. CHART - WARNA #8B3A3A (SAMA DENGAN GRAFIK)
+   ============================================ */
+
+.dark .recharts-bar-rectangle {
+  fill: #8B3A3A !important;
+}
+
+.dark .recharts-bar-rectangle:hover {
+  fill: #9A4A4A !important;
+}
+
+.dark .recharts-line-curve {
+  stroke: #8B3A3A !important;
+}
+
+.dark .recharts-line-dot {
+  stroke: #8B3A3A !important;
+  fill: #1a1e26 !important;
+}
+
+.dark .recharts-line-active-dot {
+  stroke: #9A4A4A !important;
+  fill: #9A4A4A !important;
+}
+
+.dark .recharts-cartesian-axis-tick-value,
+.dark .recharts-cartesian-axis-tick text,
+.dark .recharts-text {
+  fill: #b0b8c8 !important;
+}
+
+.dark .recharts-cartesian-axis-line {
+  stroke: #2d3440 !important;
+}
+
+.dark .recharts-cartesian-grid-horizontal line,
+.dark .recharts-cartesian-grid-vertical line {
+  stroke: rgba(45, 52, 64, 0.3) !important;
+}
+
+.dark .recharts-tooltip-wrapper {
+  background: #232833 !important;
+  border: 2px solid #2d3440 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+}
+
+.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: #232833 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 12px 16px !important;
+  box-shadow: none !important;
+}
+
+.dark .recharts-tooltip-wrapper .recharts-tooltip-label {
+  color: #e8edf5 !important;
+  font-weight: 700 !important;
+}
+
+.dark .recharts-tooltip-wrapper .recharts-tooltip-item {
+  color: #b0b8c8 !important;
+}
+
+.dark .recharts-tooltip-wrapper .recharts-tooltip-item-value {
+  color: #b8a050 !important;
+  font-weight: 700 !important;
+}
+
+.dark .recharts-legend-item-text {
+  color: #b0b8c8 !important;
+}
+
+/* ============================================
+   7. INPUT & FORM
+   ============================================ */
+
+.dark input,
+.dark select,
+.dark textarea {
+  background: #1a1e26 !important;
+  border-color: #2d3440 !important;
+  color: #e8edf5 !important;
+}
+
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+  border-color: #2a7a5e !important;
+  box-shadow: 0 0 0 3px rgba(42, 122, 94, 0.15) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #6b7488 !important;
+}
+
+/* ============================================
+   8. SCROLLBAR
+   ============================================ */
+
+.dark ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1a1e26;
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #2d3440;
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #3a4050;
+}
+
+/* ============================================
+   9. HOVER EFFECTS
+   ============================================ */
+
+.dark .hover\:bg-\[\#C9A227\]\/20:hover {
+  background-color: rgba(154, 133, 64, 0.12) !important;
+}
+
+.dark .hover\:bg-\[\#C9A227\]\/10:hover {
+  background-color: rgba(154, 133, 64, 0.08) !important;
+}
+
+.dark .hover\:bg-\[\#FFFDF7\]:hover {
+  background: #2a303d !important;
+}
+
+.dark .hover\:text-\[\#FFFDF7\]:hover {
+  color: #e8edf5 !important;
+}
+
+.dark .hover\:shadow-\[10px_10px_0px_\#18181B\]:hover,
+.dark .hover\:shadow-\[8px_8px_0px_\#18181B\]:hover {
+  box-shadow: 10px 10px 0px #1a1e26 !important;
+}
+
+/* ============================================
+   10. TOP 5 MENU - RANKING
+   ============================================ */
+
+.dark .bg-\[\#7F1D1D\].text-\[\#FFFDF7\].border-\[\#18181B\],
+.dark .flex.h-7.w-7.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#7F1D1D\] {
+  background: #7A3535 !important;
+  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
+  border-color: #4A2020 !important;
+  color: #ffffff !important;
+}
+
+/* ============================================
+   11. SHADOW MERAH
+   ============================================ */
+
+.dark .shadow-\[3px_3px_0px_\#7F1D1D\],
+.dark .shadow-\[4px_4px_0px_\#7F1D1D\],
+.dark .shadow-\[2px_2px_0px_\#7F1D1D\],
+.dark .shadow-\[6px_6px_0px_\#7F1D1D\] {
+  box-shadow: 3px 3px 0px #4A2828 !important;
+}
+
+/* ============================================
+   12. TABLE - DARK MODE
+   ============================================ */
+
+.dark .border-b-2.border-\[\#18181B\],
+.dark .border-b-4.border-\[\#18181B\],
+.dark .border-t-2.border-\[\#18181B\] {
+  border-color: #2d3440 !important;
+}
+
+.dark .border-b-2.border-\[\#18181B\]\/20 {
+  border-bottom-color: rgba(45, 52, 64, 0.3) !important;
+}
+
+.dark .border-\[\#18181B\]\/20 {
+  border-color: rgba(45, 52, 64, 0.3) !important;
+}
+
+/* ============================================
+   13. LAINNYA
+   ============================================ */
+
+.dark .border-2.border-\[\#C9A227\] {
+  border-color: #9a8540 !important;
+}
+
+.dark .border-2.border-\[\#065F46\] {
+  border-color: #1a6b4f !important;
+}
+
+.dark .border-2.border-\[\#7F1D1D\] {
+  border-color: #6A2A2A !important;
+}
+
+.dark .bg-\[\#18181B\]\/80 {
+  background: rgba(26, 30, 38, 0.85) !important;
+}
+
+.dark .border-soft {
+  border-color: rgba(45, 52, 64, 0.4) !important;
+}
+
+.dark .border-border {
+  border-color: #2d3440 !important;
+}
+
+.dark .bg-primary-green {
+  background: #1a6b4f !important;
+}
+
+.dark .bg-accent-gold {
+  background: #9a8540 !important;
+}
+
+.dark .bg-destructive-red {
+  background: #6A2A2A !important;
+}
+
+.dark .animate-pulse {
+  animation: pulse-dark 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-dark {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* ============================================
+   TINGKATKAN BRIGHTNESS SEMUA AKSEN MERAH
+   ============================================ */
+
+/* ============================================
+   1. WARNA MERAH UTAMA - LEBIH TERANG
+   ============================================ */
+
+/* Teks merah - lebih terang dan jelas */
+.dark .text-\[\#7F1D1D\] {
+  color: #D68A8A !important;
+}
+
+.dark .text-\[\#7F1D1D\]\/70 {
+  color: #D68A8A !important;
+}
+
+.dark .text-\[\#7F1D1D\]\/50 {
+  color: #E8A0A0 !important;
+}
+
+.dark .text-\[\#7F1D1D\]\/30 {
+  color: #F0B8B8 !important;
+}
+
+/* ============================================
+   2. BORDER MERAH - LEBIH TERANG
+   ============================================ */
+
+.dark .border-\[\#7F1D1D\] {
+  border-color: #8A4040 !important;
+}
+
+.dark .border-2.border-\[\#7F1D1D\] {
+  border-color: #8A4040 !important;
+}
+
+.dark .border-\[\#7F1D1D\]\/20 {
+  border-color: rgba(139, 58, 58, 0.35) !important;
+}
+
+/* ============================================
+   3. BACKGROUND MERAH - LEBIH TERANG
+   ============================================ */
+
+.dark .bg-\[\#7F1D1D\] {
+  background: #7A3535 !important;
+  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
+}
+
+.dark button.bg-\[\#7F1D1D\] {
+  background: #7A3535 !important;
+  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
+}
+
+.dark .bg-\[\#7F1D1D\].text-\[\#FFFDF7\] {
+  background: #7A3535 !important;
+  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
+}
+
+.dark .bg-\[\#7F1D1D\]\/10 {
+  background: rgba(139, 58, 58, 0.18) !important;
+}
+
+.dark .bg-\[\#7F1D1D\]\/30 {
+  background: rgba(139, 58, 58, 0.30) !important;
+}
+
+.dark button.bg-\[\#7F1D1D\]:hover {
+  background: #8A4040 !important;
+  background: linear-gradient(145deg, #8A4040 0%, #7A3535 100%) !important;
+}
+
+/* ============================================
+   4. TABEL HEADER - MERAH LEBIH TERANG
+   ============================================ */
+
+.dark thead .bg-\[\#7F1D1D\],
+.dark th.bg-\[\#7F1D1D\],
+.dark .border-b-2.border-\[\#18181B\].bg-\[\#7F1D1D\] {
+  background: #7A3535 !important;
+  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
+}
+
+.dark thead th {
+  color: #ffffff !important;
+}
+
+/* Table row hover - lebih terang */
+.dark .hover\:bg-\[\#C9A227\]\/10:hover {
+  background-color: rgba(139, 58, 58, 0.12) !important;
+}
+
+.dark .hover\:bg-\[\#C9A227\]\/20:hover {
+  background-color: rgba(139, 58, 58, 0.18) !important;
+}
+
+/* ============================================
+   5. SIDEBAR - MERAH LEBIH TERANG
+   ============================================ */
+
+.dark aside.bg-\[\#7F1D1D\] {
+  background: #4A2828 !important;
+  background: linear-gradient(180deg, #4A2828 0%, #3A1E1E 100%) !important;
+}
+
+.dark aside a.bg-\[\#C9A227\],
+.dark aside a[class*="bg-\[\#C9A227\""] {
+  background: #7A3535 !important;
+  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
+  border-color: #5A2828 !important;
+  color: #ffffff !important;
+}
+
+.dark aside a.bg-\[\#C9A227\] svg,
+.dark aside a[class*="bg-\[\#C9A227\""] svg {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* ============================================
+   6. BUTTON - MERAH LEBIH TERANG
+   ============================================ */
+
+/* NeoButton */
+.dark button.border-4.border-\[\#18181B\].bg-\[\#7F1D1D\] {
+  background: #7A3535 !important;
+  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
+  border-color: #4A2020 !important;
+  color: #ffffff !important;
+}
+
+.dark button.border-4.border-\[\#18181B\].bg-\[\#7F1D1D\]:hover {
+  background: #8A4040 !important;
+  background: linear-gradient(145deg, #8A4040 0%, #7A3535 100%) !important;
+}
+
+/* KASIR - TAB BUTTON */
+.dark button.bg-\[\#7F1D1D\].text-\[\#FFFDF7\] {
+  background: #7A3535 !important;
+  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
+  color: #ffffff !important;
+}
+
+/* ============================================
+   7. BADGE - MERAH LEBIH TERANG
+   ============================================ */
+
+.dark .border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10,
+.dark .border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10.text-\[\#7F1D1D\] {
+  background: rgba(139, 58, 58, 0.18) !important;
+  border-color: #8A4040 !important;
+  color: #D68A8A !important;
+}
+
+/* ============================================
+   8. DELETE BUTTON - MERAH LEBIH TERANG
+   ============================================ */
+
+.dark button.border-2.border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10 {
+  background: rgba(139, 58, 58, 0.18) !important;
+  border-color: #8A4040 !important;
+  color: #D68A8A !important;
+}
+
+.dark button.border-2.border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10:hover {
+  background: rgba(139, 58, 58, 0.32) !important;
+}
+
+/* ============================================
+   9. ICON BOX - MERAH LEBIH TERANG
+   ============================================ */
+
+/* Icon box ukuran 12 */
+.dark .flex.h-12.w-12.border-2.border-\[\#18181B\].bg-\[\#C9A227\],
+.dark .flex.h-12.w-12.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] {
+  background: #7A3535 !important;
+  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
+  border-color: #5A2828 !important;
+  box-shadow: 3px 3px 0px #3A2020 !important;
+}
+
+.dark .flex.h-12.w-12.border-2.border-\[\#18181B\].bg-\[\#C9A227\] svg,
+.dark .flex.h-12.w-12.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] svg {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* Icon box ukuran 10 */
+.dark .flex.h-10.w-10.border-2.border-\[\#18181B\].bg-\[\#C9A227\],
+.dark .flex.h-10.w-10.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\],
+.dark .flex.h-10.w-10.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] {
+  background: #7A3535 !important;
+  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
+  border-color: #5A2828 !important;
+  box-shadow: 3px 3px 0px #3A2020 !important;
+}
+
+.dark .flex.h-10.w-10.border-2.border-\[\#18181B\].bg-\[\#C9A227\] svg,
+.dark .flex.h-10.w-10.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] svg {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* ============================================
+   10. RINCIAN KAS MASUK - ICON BOX
+   ============================================ */
+
+.dark .flex.h-10.w-10.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] {
+  background: #7A3535 !important;
+  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
+  border-color: #5A2828 !important;
+  box-shadow: 3px 3px 0px #3A2020 !important;
+}
+
+.dark .flex.h-10.w-10.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] svg {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* ============================================
+   11. SHADOW MERAH - LEBIH TERANG
+   ============================================ */
+
+.dark .shadow-\[3px_3px_0px_\#7F1D1D\],
+.dark .shadow-\[4px_4px_0px_\#7F1D1D\],
+.dark .shadow-\[2px_2px_0px_\#7F1D1D\],
+.dark .shadow-\[6px_6px_0px_\#7F1D1D\] {
+  box-shadow: 3px 3px 0px #4A2828 !important;
+}
+
+/* ============================================
+   12. TOP 5 MENU - RANKING ICON
+   ============================================ */
+
+.dark .bg-\[\#7F1D1D\].text-\[\#FFFDF7\].border-\[\#18181B\],
+.dark .flex.h-7.w-7.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#7F1D1D\] {
+  background: #7A3535 !important;
+  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
+  border-color: #5A2828 !important;
+  color: #ffffff !important;
+}
+
+/* ============================================
+   13. KARYAWAN - ROLE BADGE OWNER
+   ============================================ */
+
+.dark .border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10.text-\[\#7F1D1D\] {
+  background: rgba(139, 58, 58, 0.18) !important;
+  border-color: #8A4040 !important;
+  color: #D68A8A !important;
+}
+
+/* ============================================
+   14. AVATAR - WARNA MERAH LEBIH TERANG
+   ============================================ */
+
+.dark .border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10.text-\[\#7F1D1D\] {
+  background: rgba(139, 58, 58, 0.18) !important;
+  border-color: #8A4040 !important;
+  color: #D68A8A !important;
+}
+
+/* ============================================
+   15. DAPUR - STATUS BADGE
+   ============================================ */
+
+.dark .border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10 {
+  background: rgba(139, 58, 58, 0.18) !important;
+  border-color: #8A4040 !important;
+}
+
+.dark .border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10.text-\[\#7F1D1D\] {
+  background: rgba(139, 58, 58, 0.18) !important;
+  border-color: #8A4040 !important;
+  color: #D68A8A !important;
+}
+
+/* ============================================
+   16. CHART - TETAP SAMA
+   ============================================ */
+
+.dark .recharts-bar-rectangle {
+  fill: #8B3A3A !important;
+}
+
+.dark .recharts-bar-rectangle:hover {
+  fill: #9A4A4A !important;
+}
+
+.dark .recharts-line-curve {
+  stroke: #8B3A3A !important;
+}
+
+.dark .recharts-line-dot {
+  stroke: #8B3A3A !important;
+  fill: #1a1e26 !important;
+}
+
+.dark .recharts-line-active-dot {
+  stroke: #9A4A4A !important;
+  fill: #9A4A4A !important;
 }

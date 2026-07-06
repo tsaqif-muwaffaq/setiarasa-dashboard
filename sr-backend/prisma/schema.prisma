@@ -1,38 +1,25 @@
-// Konfigurasi Client Prisma
+// schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
 
-// Konfigurasi Database Supabase dengan Connection Pooling
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
-// --- ENUM (Pilihan Tetap) ---
-enum Role {
-  OWNER
-  KASIR
-  DAPUR
-}
-
-enum OrderStatus {
-  PENDING
-  COOKING
-  COMPLETED
-  CANCELLED
-}
-
-// --- MODEL TABEL DATABASE ---
-
 model User {
   id        String   @id @default(uuid())
   name      String
   email     String   @unique
-  password  String   // Akan disimpan dalam bentuk hash bcrypt
+  password  String
   role      Role     @default(KASIR)
+  phone     String?  
+  avatar    String?
   createdAt DateTime @default(now())
+  orders    Order[]  // 👈 Tambahkan relasi ke Order
 }
 
 model Menu {
@@ -40,36 +27,67 @@ model Menu {
   name        String
   description String?
   price       Float
-  category    String      // Contoh: "Ayam & Bebek", "Minuman"
-  imageUrl    String      // URL gambar dari Cloudinary
+  category    String
+  imageUrl    String
   stock       Int         @default(0)
   isAvailable Boolean     @default(true)
   createdAt   DateTime    @default(now())
-  
-  // Relasi ke tabel OrderItem
   orderItems  OrderItem[]
 }
 
 model Order {
-  id            String      @id @default(uuid())
-  customerName  String?     // Nama pelanggan
-  tableNumber   String?        // Nomor meja
-  totalAmount   Float       // Total belanja
-  status        OrderStatus @default(PENDING) // Status awal selalu PENDING
-  createdAt     DateTime    @default(now())
-  
-  // Relasi ke detail pesanan
-  items         OrderItem[] 
+  id           String        @id @default(uuid())
+  status       OrderStatus   @default(PENDING_PAYMENT)
+  paymentMethod PaymentMethod @default(CASH)
+  orderType    String        @default("DINE_IN")
+  createdAt    DateTime      @default(now())
+  customerName String?
+  totalAmount  Float
+  tableNumber  String?
+  source       OrderSource   @default(OFFLINE) // 👈 Tambahkan field source
+  userId       String?       // 👈 Tambahkan userId (opsional, untuk tracking siapa yang buat)
+  user         User?         @relation(fields: [userId], references: [id]) // 👈 Relasi ke User
+  items        OrderItem[]
+  snapToken    String?
 }
 
 model OrderItem {
-  id       String  @id @default(uuid())
+  id       String @id @default(uuid())
   orderId  String
   menuId   String
   quantity Int
-  price    Float   // Disimpan statis agar riwayat tidak rusak jika harga menu berubah
-  
-  // Relasi (Foreign Keys)
-  order    Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  menu     Menu    @relation(fields: [menuId], references: [id])
+  price    Float
+  menu     Menu   @relation(fields: [menuId], references: [id])
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  OWNER
+  KASIR
+  DAPUR
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  COOKING
+  READY
+  COMPLETED
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  QRIS
+  GOPAY
+  SHOPEEPAY
+  BANK_TRANSFER
+  DEBIT
+}
+
+enum OrderSource {
+  OFFLINE   // Dari internal (Kasir/Admin)
+  ONLINE    // Dari Web Public
 }

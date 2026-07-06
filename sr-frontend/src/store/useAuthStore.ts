@@ -1,35 +1,30 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 interface User {
   id: string;
   name: string;
   email: string;
   role: 'OWNER' | 'KASIR' | 'DAPUR';
+  phone?: string;
+  avatar?: string;
 }
 
 interface AuthState {
-  user: User | null;
   token: string | null;
-  setAuth: (user: User, token: string) => void;
+  user: User | null;
+  setAuth: (token: string, user: User) => void;
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  // Cek apakah ada data di localStorage saat aplikasi pertama kali dimuat
-  user: JSON.parse(localStorage.getItem('user') || 'null'),
-  token: localStorage.getItem('token') || null,
-
-  setAuth: (user, token) => {
-    // Simpan ke localStorage agar sesi bertahan
-    localStorage.setItem('user', JSON.stringify(user));
-    localStorage.setItem('token', token);
-    // Simpan ke global state
-    set({ user, token });
-  },
-
-  logout: () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    set({ user: null, token: null });
-  },
-}));
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      token: null,
+      user: null,
+      setAuth: (token, user) => set({ token, user }),
+      logout: () => set({ token: null, user: null }),
+    }),
+    { name: 'auth-storage' } // Data akan disimpan otomatis ke LocalStorage
+  )
+);

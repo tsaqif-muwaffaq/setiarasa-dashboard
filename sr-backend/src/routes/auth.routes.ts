@@ -1,9 +1,12 @@
 import { Router } from 'express';
 import * as AuthController from '../controllers/auth.controller';
+import { verifyToken } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-// Endpoint: POST http://localhost:5000/api/auth/login
 router.post('/login', AuthController.login);
+
+// Endpoint baru untuk update profil (dilindungi verifyToken)
+router.put('/profile', verifyToken, AuthController.updateProfile);
 
 export default router;

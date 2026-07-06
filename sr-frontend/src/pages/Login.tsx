@@ -1,131 +1,165 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
+import { Lock, Mail, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
-import { UtensilsCrossed, ChefHat } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  
+  const [isLoading, setIsLoading] = useState(false);
+
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setIsLoading(true);
 
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/login`, {
         email,
-        password,
+        password
       });
 
-      if (res.data.success) {
-        toast.success('Selamat datang kembali!');
-        setAuth(res.data.data.user, res.data.data.token);
-        navigate('/dashboard'); 
+      const { token, user } = response.data.data;
+      setAuth(token, user);
+      toast.success(response.data.message);
+
+      if (user.role === 'DAPUR') {
+        navigate('/dapur', { replace: true });
+      } else if (user.role === 'KASIR') {
+        navigate('/kasir', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Gagal terhubung ke server.');
+
+    } catch (error: unknown) {
+      const message = axios.isAxiosError<{ message?: string }>(error)
+        ? error.response?.data?.message
+        : undefined;
+      toast.error(message || 'Gagal terhubung ke server.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="w-full min-h-screen flex lg:grid lg:grid-cols-2 bg-background">
-      {/* Sisi Kiri: Form Login */}
-      <div className="flex items-center justify-center w-full px-8 py-12 lg:px-16">
-        <div className="mx-auto w-full max-w-[400px] space-y-8">
-          
-          {/* Header Brand */}
-          <div className="space-y-2 text-center lg:text-left">
-            <div className="flex items-center justify-center lg:justify-start gap-2 mb-6">
-              <div className="bg-primary p-2 rounded-lg">
-                <UtensilsCrossed className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold tracking-tight text-foreground">
-                Setia Rasa
-              </span>
-            </div>
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-              Masuk ke Dashboard
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Masukkan email dan password untuk mengelola operasional restoran.
-            </p>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-foreground">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="admin@setiarasa.web.id"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-12 bg-background"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-foreground">Password</Label>
-              </div>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="h-12 bg-background"
-              />
-            </div>
-
-            <Button 
-              type="submit" 
-              className="w-full h-12 text-md font-medium transition-all" 
-              disabled={loading}
-            >
-              {loading ? 'Memverifikasi...' : 'Masuk ke Sistem'}
-            </Button>
-          </form>
-
-          {/* Footer Info */}
-          <p className="text-center text-sm text-muted-foreground pt-6 border-t">
-            Sistem Internal Rumah Makan Setia Rasa &copy; 2026
-          </p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-[#FFFDF7] dark:bg-[#18181B] p-4 transition-colors duration-300 relative overflow-hidden">
+      {/* Pattern Background */}
+      <div className="absolute inset-0 bg-pattern bg-dot-grid pointer-events-none" />
+      
+      {/* Decorative Floating Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-[#C9A227]/5 rounded-full blur-3xl animate-float" />
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-[#7F1D1D]/5 rounded-full blur-3xl animate-float-delay-1" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#065F46]/3 rounded-full blur-3xl animate-float-delay-2" />
       </div>
 
-      {/* Sisi Kanan: Gambar Visual (Hanya muncul di layar besar) */}
-      <div className="hidden lg:flex relative bg-slate-900 items-center justify-center overflow-hidden">
-        {/* URL gambar bisa diganti dengan foto asli sate/menu andalan restoran nanti */}
-        <img
-          src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1920&auto=format&fit=crop"
-          alt="Suasana Restoran"
-          className="absolute inset-0 w-full h-full object-cover opacity-40"
-        />
-        
-        {/* Overlay Text */}
-        <div className="relative z-10 p-12 text-center text-white max-w-lg space-y-6">
-          <ChefHat className="w-16 h-16 mx-auto text-primary" />
-          <h2 className="text-4xl font-bold leading-tight">
-            Setia Karena Rasa
-          </h2>
-          <p className="text-lg text-slate-300">
-            Pusat kendali manajemen menu, stok, dan transaksi harian untuk memberikan pelayanan terbaik bagi pelanggan setia.
-          </p>
+      {/* Theme Toggle */}
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeToggle />
+      </div>
+
+      {/* Card Login - Neubrutalism dengan animasi masuk */}
+      <div className="relative max-w-md w-full border-4 border-[#18181B] bg-[#FFFDF7] shadow-[12px_12px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[12px_12px_0px_#FFFDF7] overflow-hidden animate-fade-in-up corner-accent">
+        {/* Top accent bar - gradasi profesional dengan shimmer */}
+        <div className="h-2 w-full bg-gradient-to-r from-[#7F1D1D] via-[#C9A227] to-[#065F46] animate-shimmer" />
+
+        <div className="p-8 space-y-6">
+
+          {/* Brand Section */}
+          <div className="text-center space-y-3">
+            <div className="flex justify-center">
+              <div className="w-20 h-20 rounded-2xl border-4 border-[#18181B] bg-[#FFFDF7] p-2 shadow-[4px_4px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[4px_4px_0px_#FFFDF7] flex items-center justify-center hover-scale-bounce">
+                <img 
+                  src="/logo.png" 
+                  alt="Logo Setia Rasa" 
+                  className="w-full h-full object-contain" 
+                />
+              </div>
+            </div>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-[#7F1D1D] dark:text-[#C9A227]">
+                Setia Rasa
+              </h1>
+              <p className="text-xs font-bold uppercase tracking-wider text-[#18181B]/50 dark:text-[#FFFDF7]/50 mt-1">
+                Internal Point of Sales System
+              </p>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t-2 border-[#18181B]/20 dark:border-[#FFFDF7]/20" />
+
+          {/* Form */}
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-1.5 animate-slide-in-left-delay-1">
+              <label className="text-xs font-bold uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7]">
+                Email Pegawai
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#18181B]/40 dark:text-[#FFFDF7]/40" />
+                <input
+                  type="email"
+                  required
+                  className="w-full pl-10 pr-4 py-2.5 border-2 border-[#18181B]/30 bg-[#FFFDF7] focus:border-[#7F1D1D] focus:shadow-[0_0_0_3px_rgba(127,29,29,0.15)] outline-none text-sm font-medium text-[#18181B] transition-all rounded-lg dark:border-[#FFFDF7]/30 dark:bg-[#18181B] dark:text-[#FFFDF7] dark:focus:border-[#C9A227] dark:focus:shadow-[0_0_0_3px_rgba(201,162,39,0.15)] placeholder:text-[#18181B]/40 dark:placeholder:text-[#FFFDF7]/40"
+                  placeholder="email@setiarasa.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5 animate-slide-in-left-delay-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7]">
+                Kata Sandi
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#18181B]/40 dark:text-[#FFFDF7]/40" />
+                <input
+                  type="password"
+                  required
+                  className="w-full pl-10 pr-4 py-2.5 border-2 border-[#18181B]/30 bg-[#FFFDF7] focus:border-[#7F1D1D] focus:shadow-[0_0_0_3px_rgba(127,29,29,0.15)] outline-none text-sm font-medium text-[#18181B] transition-all rounded-lg dark:border-[#FFFDF7]/30 dark:bg-[#18181B] dark:text-[#FFFDF7] dark:focus:border-[#C9A227] dark:focus:shadow-[0_0_0_3px_rgba(201,162,39,0.15)] placeholder:text-[#18181B]/40 dark:placeholder:text-[#FFFDF7]/40"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full border-4 border-[#18181B] bg-gradient-to-r from-[#7F1D1D] to-[#9B2226] text-[#FFFDF7] font-bold py-3 shadow-[6px_6px_0px_#18181B] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[2px_2px_0px_#18181B] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 dark:border-[#FFFDF7] dark:shadow-[6px_6px_0px_#FFFDF7] dark:hover:shadow-[10px_10px_0px_#FFFDF7] flex items-center justify-center gap-2 mt-2 rounded-lg hover-scale-bounce animate-slide-in-left-delay-3"
+            >
+              {isLoading ? (
+                <>
+                  <span className="w-4 h-4 rounded-full border-2 border-[#FFFDF7] border-t-transparent animate-spin" />
+                  Memverifikasi...
+                </>
+              ) : (
+                <>
+                  Masuk Sistem
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between pt-2 border-t-2 border-[#18181B]/20 dark:border-[#FFFDF7]/20 animate-fade-in-up-delay-4">
+            <p className="text-[10px] font-bold text-[#18181B]/40 dark:text-[#FFFDF7]/40">
+              Internal System v2.0
+            </p>
+            <span className="flex items-center gap-1.5 text-[10px] font-bold text-[#18181B]/40 dark:text-[#FFFDF7]/40">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#065F46] animate-pulse dark:bg-[#34D399] inline-block" />
+              Sistem Aktif
+            </span>
+          </div>
+
         </div>
       </div>
     </div>

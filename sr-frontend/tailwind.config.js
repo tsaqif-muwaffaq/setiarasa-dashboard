@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: ["class"],
+  darkMode: "class",
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -8,6 +8,11 @@ export default {
   theme: {
     extend: {
       colors: {
+        burgundy: "#7F1D1D",
+        gold: "#C9A227",
+        emerald: "#065F46",
+        ivory: "#FFFDF7",
+        charcoal: "#18181B",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

@@ -11,6 +11,11 @@ router.get('/', MenuController.getAllMenus);
 // Kita sisipkan middleware "upload.single('image')" agar Express siap menangkap file
 router.post('/', upload.single('image'), MenuController.createMenu);
 
+// ---------------------------------------------------
+// TAMBAHKAN BARIS INI UNTUK FITUR EDIT (UPDATE STOK)
+// ---------------------------------------------------
+router.put('/:id', upload.single('image'), MenuController.updateMenu);
+
 // Route untuk menghapus menu (DELETE /api/menu/:id)
 router.delete('/:id', MenuController.deleteMenu);
 

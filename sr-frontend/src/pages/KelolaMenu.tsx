@@ -3,28 +3,8 @@ import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
-import { Plus, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, UtensilsCrossed, ChefHat, X } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-
-// Tipe Data Menu
 interface Menu {
   id: string;
   name: string;
@@ -34,194 +14,397 @@ interface Menu {
   imageUrl: string;
 }
 
+// ── Komponen Neubrutalism ──
+function NeoCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`border-4 border-[#18181B] bg-[#FFFDF7] shadow-[6px_6px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[6px_6px_0px_#FFFDF7] ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+function NeoButton({ children, onClick, className = '', disabled = false, type = 'button' }: { children: React.ReactNode; onClick?: () => void; className?: string; disabled?: boolean; type?: 'button' | 'submit' }) {
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className={`border-4 border-[#18181B] bg-[#7F1D1D] text-[#FFFDF7] font-black px-5 py-2.5 shadow-[6px_6px_0px_#18181B] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[2px_2px_0px_#18181B] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 dark:border-[#FFFDF7] dark:shadow-[6px_6px_0px_#FFFDF7] dark:hover:shadow-[10px_10px_0px_#FFFDF7] ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function NeoInput({ className = '', ...props }: React.ComponentProps<'input'>) {
+  return (
+    <input
+      className={`border-2 border-[#18181B] bg-[#FFFDF7] px-3 py-2 text-sm font-bold text-[#18181B] outline-none transition-all focus:shadow-[4px_4px_0px_#7F1D1D] focus:border-[#7F1D1D] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:text-[#FFFDF7] dark:focus:shadow-[4px_4px_0px_#C9A227] dark:focus:border-[#C9A227] placeholder:text-[#18181B]/40 dark:placeholder:text-[#FFFDF7]/40 ${className}`}
+      {...props}
+    />
+  );
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  'AYAM & BEBEK': 'border-[#7F1D1D] bg-[#7F1D1D]/10 text-[#7F1D1D] dark:text-[#FFFDF7]',
+  'IKAN & LAINNYA': 'border-[#065F46] bg-[#065F46]/10 text-[#065F46] dark:text-[#FFFDF7]',
+  'NASI GORENG': 'border-[#C9A227] bg-[#C9A227]/20 text-[#18181B] dark:text-[#C9A227]',
+  'MIE, KWETIAU, BIHUN': 'border-[#18181B] bg-[#18181B]/10 text-[#18181B] dark:bg-[#FFFDF7]/10 dark:text-[#FFFDF7]',
+  'SAYUR & SOP': 'border-[#065F46] bg-[#065F46]/10 text-[#065F46] dark:text-[#FFFDF7]',
+  'MINUMAN': 'border-[#7F1D1D] bg-[#7F1D1D]/10 text-[#7F1D1D] dark:text-[#FFFDF7]',
+};
+
 export default function KelolaMenu() {
   const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // State Form
-  const [name, setName] = useState('');
-  const [price, setPrice] = useState('');
-  const [category, setCategory] = useState('');
-  const [stock, setStock] = useState('');
-  const [image, setImage] = useState<File | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Konfigurasi Axios dengan Token
-  const axiosConfig = {
-    headers: { Authorization: `Bearer ${token}` },
-  };
+  const [formData, setFormData] = useState({
+    name: '',
+    price: '',
+    category: 'AYAM & BEBEK',
+    stock: '',
+    imageUrl: ''
+  });
 
-  // 1. Fetch Data Menu (Otomatis Caching)
+  const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
+
   const { data: menus, isLoading } = useQuery<Menu[]>({
     queryKey: ['menus'],
     queryFn: async () => {
-      const res = await axios.get('http://localhost:5000/api/menu', axiosConfig);
+      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/menu`, axiosConfig);
       return res.data.data;
-    },
+    }
   });
 
-  // 2. Mutasi Tambah Menu (Upload Foto)
-  const addMenuMutation = useMutation({
-    mutationFn: async (formData: FormData) => {
-      const res = await axios.post('http://localhost:5000/api/menu', formData, {
-        headers: {
-          ...axiosConfig.headers,
-          'Content-Type': 'multipart/form-data', // Wajib untuk upload file
-        },
-      });
-      return res.data;
-    },
+  const createMutation = useMutation({
+    mutationFn: async (payload: FormData) => axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/menu`, payload, axiosConfig),
     onSuccess: () => {
-      toast.success('Menu baru berhasil ditambahkan!');
-      queryClient.invalidateQueries({ queryKey: ['menus'] }); // Refresh tabel otomatis
-      setIsDialogOpen(false); // Tutup modal
-      resetForm();
+      toast.success('✅ Menu baru berhasil ditambahkan!');
+      queryClient.invalidateQueries({ queryKey: ['menus'] });
+      closeModal();
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Gagal menambahkan menu');
-    },
+    onError: () => toast.error('Gagal menambahkan menu')
   });
 
-  // 3. Mutasi Hapus Menu
-  const deleteMenuMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await axios.delete(`http://localhost:5000/api/menu/${id}`, axiosConfig);
-    },
+  const editMutation = useMutation({
+    mutationFn: async (payload: FormData) => axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/menu/${editingId}`, payload, axiosConfig),
     onSuccess: () => {
-      toast.success('Menu berhasil dihapus!');
+      toast.success('✅ Data menu berhasil diperbarui!');
+      queryClient.invalidateQueries({ queryKey: ['menus'] });
+      closeModal();
+    },
+    onError: () => toast.error('Gagal memperbarui menu')
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/menu/${id}`, axiosConfig),
+    onSuccess: () => {
+      toast.success('✅ Menu berhasil dihapus!');
       queryClient.invalidateQueries({ queryKey: ['menus'] });
     },
+    onError: () => toast.error('Gagal menghapus menu')
   });
 
-  const resetForm = () => {
-    setName(''); setPrice(''); setCategory(''); setStock(''); setImage(null);
+  const handleOpenAdd = () => {
+    setFormData({ name: '', price: '', category: 'AYAM & BEBEK', stock: '', imageUrl: '' });
+    setImageFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    setIsEditing(false);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (menu: Menu) => {
+    setFormData({
+      name: menu.name,
+      price: menu.price.toString(),
+      category: menu.category,
+      stock: menu.stock.toString(),
+      imageUrl: menu.imageUrl || ''
+    });
+    setEditingId(menu.id);
+    setImageFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    setIsEditing(true);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setFormData({ name: '', price: '', category: 'AYAM & BEBEK', stock: '', imageUrl: '' });
+    setImageFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!image) {
-      toast.error('Foto makanan wajib diunggah!');
+
+    const submitData = new FormData();
+    submitData.append('name', formData.name);
+    submitData.append('price', formData.price);
+    submitData.append('category', formData.category);
+    submitData.append('stock', formData.stock);
+
+    if (imageFile) {
+      submitData.append('image', imageFile);
+    } else if (formData.imageUrl) {
+      submitData.append('imageUrl', formData.imageUrl);
+    }
+
+    if (!isEditing && !imageFile) {
+      toast.error('Gambar menu wajib diunggah!');
       return;
     }
 
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('price', price);
-    formData.append('category', category);
-    formData.append('stock', stock);
-    formData.append('image', image); // Memasukkan file gambar
-
-    addMenuMutation.mutate(formData);
+    if (isEditing) {
+      editMutation.mutate(submitData);
+    } else {
+      createMutation.mutate(submitData);
+    }
   };
 
+  const handleDelete = (id: string, name: string) => {
+    if (confirm(`Yakin ingin menghapus menu "${name}"?`)) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  const filteredMenus = menus?.filter(menu =>
+    menu.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalMenu = menus?.length || 0;
+  const stokHabis = menus?.filter(m => m.stock <= 0).length || 0;
+  const stokMenipis = menus?.filter(m => m.stock > 0 && m.stock <= 5).length || 0;
+
   return (
-    <div className="space-y-6">
-      {/* Header Halaman */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Kelola Menu</h1>
-          <p className="text-sm text-muted-foreground">Manajemen daftar makanan, harga, dan stok.</p>
+    <div className="space-y-6 pb-10 bg-[#FFFDF7] dark:bg-[#18181B]">
+
+      {/* Header */}
+      <NeoCard className="p-4 sm:p-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center border-2 border-[#18181B] bg-[#C9A227] shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7]">
+              <ChefHat className="h-5 w-5 text-[#18181B]" />
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-wider text-[#7F1D1D] dark:text-[#C9A227]">
+                Setia Rasa · Manajemen Menu
+              </p>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[#18181B] dark:text-[#FFFDF7]">
+                Kelola Menu
+              </h1>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 w-full lg:w-auto">
+            <div className="flex flex-col items-center justify-center border-2 border-[#18181B] bg-[#FFFDF7] px-4 py-2.5 shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[3px_3px_0px_#FFFDF7]">
+              <span className="text-xl font-black text-[#18181B] dark:text-[#FFFDF7] leading-none">{totalMenu}</span>
+              <span className="text-[11px] font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 mt-1">Total menu</span>
+            </div>
+            <div className={`flex flex-col items-center justify-center border-2 px-4 py-2.5 shadow-[3px_3px_0px_#18181B] dark:shadow-[3px_3px_0px_#FFFDF7] ${stokHabis > 0 ? 'border-[#7F1D1D] bg-[#7F1D1D]/10' : 'border-[#18181B] bg-[#FFFDF7] dark:border-[#FFFDF7] dark:bg-[#18181B]'}`}>
+              <span className={`text-xl font-black leading-none ${stokHabis > 0 ? 'text-[#7F1D1D]' : 'text-[#18181B] dark:text-[#FFFDF7]'}`}>{stokHabis}</span>
+              <span className="text-[11px] font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 mt-1">Stok habis</span>
+            </div>
+            <div className={`flex flex-col items-center justify-center border-2 px-4 py-2.5 shadow-[3px_3px_0px_#18181B] dark:shadow-[3px_3px_0px_#FFFDF7] ${stokMenipis > 0 ? 'border-[#C9A227] bg-[#C9A227]/20' : 'border-[#18181B] bg-[#FFFDF7] dark:border-[#FFFDF7] dark:bg-[#18181B]'}`}>
+              <span className={`text-xl font-black leading-none ${stokMenipis > 0 ? 'text-[#18181B] dark:text-[#C9A227]' : 'text-[#18181B] dark:text-[#FFFDF7]'}`}>{stokMenipis}</span>
+              <span className="text-[11px] font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 mt-1">Stok menipis</span>
+            </div>
+          </div>
+        </div>
+      </NeoCard>
+
+      {/* Bar kontrol */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="relative w-full sm:max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#18181B]/50 dark:text-[#FFFDF7]/50" />
+          <NeoInput
+            placeholder="Cari nama menu..."
+            className="pl-9 w-full"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
 
-        {/* Modal Tambah Menu */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-              <Plus className="w-4 h-4 mr-2" />
-              Tambah Menu
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Tambah Menu Baru</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nama Menu</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Misal: Nasi Goreng Spesial" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Harga (Rp)</Label>
-                  <Input id="price" type="number" value={price} onChange={(e) => setPrice(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="stock">Stok Awal</Label>
-                  <Input id="stock" type="number" value={stock} onChange={(e) => setStock(e.target.value)} required />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Kategori</Label>
-                <Input id="category" value={category} onChange={(e) => setCategory(e.target.value)} required placeholder="Misal: Makanan Utama" />
-              </div>
-              <div className="space-y-2 border-2 border-dashed border-border rounded-lg p-4 text-center">
-                <Label htmlFor="image" className="cursor-pointer flex flex-col items-center justify-center gap-2">
-                  <ImageIcon className="w-8 h-8 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Klik untuk upload foto menu</span>
-                  <span className="text-xs text-primary font-medium">{image ? image.name : 'Belum ada file'}</span>
-                </Label>
-                <Input id="image" type="file" accept="image/*" className="hidden" onChange={(e) => setImage(e.target.files?.[0] || null)} />
-              </div>
-              <Button type="submit" className="w-full" disabled={addMenuMutation.isPending}>
-                {addMenuMutation.isPending ? 'Menyimpan...' : 'Simpan Menu'}
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <NeoButton onClick={handleOpenAdd}>
+          <Plus className="w-4 h-4 mr-2 inline" /> Tambah Menu Baru
+        </NeoButton>
       </div>
 
-      {/* Tabel Data Menu */}
-      <div className="border rounded-lg bg-card overflow-hidden">
-        <Table>
-          <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
-            <TableRow>
-              <TableHead className="w-[100px]">Foto</TableHead>
-              <TableHead>Nama Menu</TableHead>
-              <TableHead>Kategori</TableHead>
-              <TableHead>Harga</TableHead>
-              <TableHead>Stok</TableHead>
-              <TableHead className="text-right">Aksi</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-10">Memuat data...</TableCell></TableRow>
-            ) : menus?.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Belum ada menu yang ditambahkan.</TableCell></TableRow>
-            ) : (
-              menus?.map((menu) => (
-                <TableRow key={menu.id}>
-                  <TableCell>
-                    <img src={menu.imageUrl} alt={menu.name} className="w-12 h-12 rounded-md object-cover border" />
-                  </TableCell>
-                  <TableCell className="font-medium text-foreground">{menu.name}</TableCell>
-                  <TableCell>{menu.category}</TableCell>
-                  <TableCell>Rp {menu.price.toLocaleString('id-ID')}</TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${menu.stock > 10 ? 'bg-accent/20 text-accent' : 'bg-destructive/20 text-destructive'}`}>
-                      {menu.stock} Tersedia
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="text-destructive hover:bg-destructive/10"
-                      onClick={() => {
-                        if (confirm(`Yakin ingin menghapus ${menu.name}?`)) {
-                          deleteMenuMutation.mutate(menu.id);
-                        }
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      {/* Modal dengan Tombol Close (X) */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#18181B]/80 p-4">
+          <div className="w-full max-w-md border-4 border-[#18181B] bg-[#FFFDF7] shadow-[12px_12px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[12px_12px_0px_#FFFDF7] max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {/* Header Modal dengan Tombol Close */}
+              <div className="flex items-center justify-between mb-4 border-b-2 border-[#18181B] pb-3 dark:border-[#FFFDF7]">
+                <div className="flex items-center gap-2">
+                  <UtensilsCrossed className="w-5 h-5 text-[#7F1D1D] dark:text-[#C9A227]" />
+                  <h2 className="text-lg font-black text-[#18181B] dark:text-[#FFFDF7]">
+                    {isEditing ? 'Edit Data Menu' : 'Tambah Menu Baru'}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="border-2 border-[#18181B] bg-[#FFFDF7] p-1.5 shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[5px_5px_0px_#FFFDF7]"
+                  aria-label="Tutup modal"
+                >
+                  <X className="w-5 h-5 text-[#18181B] dark:text-[#FFFDF7]" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7]">Nama Menu</label>
+                  <NeoInput required placeholder="Contoh: Ayam Bakar" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7]">Harga (Rp)</label>
+                    <NeoInput required type="number" placeholder="15000" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7]">Stok Awal</label>
+                    <NeoInput required type="number" placeholder="50" value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: e.target.value })} />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7]">Kategori</label>
+                  <select
+                    className="w-full border-2 border-[#18181B] bg-[#FFFDF7] px-3 py-2 text-sm font-bold text-[#18181B] outline-none transition-all focus:shadow-[4px_4px_0px_#7F1D1D] focus:border-[#7F1D1D] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:text-[#FFFDF7] dark:focus:shadow-[4px_4px_0px_#C9A227] dark:focus:border-[#C9A227]"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  >
+                    <option value="AYAM & BEBEK">AYAM & BEBEK</option>
+                    <option value="IKAN & LAINNYA">IKAN & LAINNYA</option>
+                    <option value="NASI GORENG">NASI GORENG</option>
+                    <option value="MIE, KWETIAU, BIHUN">MIE, KWETIAU, BIHUN</option>
+                    <option value="SAYUR & SOP">SAYUR & SOP</option>
+                    <option value="MINUMAN">MINUMAN</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7]">
+                    Gambar Menu {isEditing ? '(Opsional)' : ''}
+                  </label>
+                  <NeoInput
+                    type="file"
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                    required={!isEditing}
+                    className="py-1"
+                  />
+                  {isEditing && formData.imageUrl && (
+                    <div className="mt-1.5 text-xs font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 flex items-center gap-2">
+                      <span>Gambar saat ini:</span>
+                      <a href={formData.imageUrl} target="_blank" rel="noreferrer" className="text-[#7F1D1D] dark:text-[#C9A227] hover:underline">
+                        Lihat Gambar
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-4 flex justify-end gap-2 border-t-2 border-[#18181B] dark:border-[#FFFDF7]">
+                  <button
+                    type="button"
+                    onClick={closeModal}
+                    className="border-2 border-[#18181B] bg-[#FFFDF7] text-[#18181B] font-black px-4 py-2 shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:text-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[5px_5px_0px_#FFFDF7]"
+                  >
+                    Batal
+                  </button>
+                  <NeoButton type="submit" disabled={createMutation.isPending || editMutation.isPending}>
+                    {createMutation.isPending || editMutation.isPending ? 'Menyimpan...' : 'Simpan'}
+                  </NeoButton>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Daftar Menu */}
+      {isLoading ? (
+        <div className="flex items-center justify-center gap-2 py-20 text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">
+          <span className="w-4 h-4 rounded-full border-2 border-[#7F1D1D] border-t-transparent animate-spin dark:border-[#C9A227] dark:border-t-transparent" />
+          Memuat data menu...
+        </div>
+      ) : filteredMenus?.length === 0 ? (
+        <div className="text-center py-20 border-4 border-dashed border-[#18181B]/30 dark:border-[#FFFDF7]/30 text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 bg-[#FFFDF7] dark:bg-[#18181B]">
+          <UtensilsCrossed className="w-8 h-8 mx-auto mb-3 text-[#C9A227]/50" />
+          {searchTerm ? `Tidak ada menu yang cocok dengan "${searchTerm}".` : 'Belum ada menu. Tambahkan menu pertama Anda.'}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+          {filteredMenus?.map((menu) => (
+            <div
+              key={menu.id}
+              className={`border-4 border-[#18181B] bg-[#FFFDF7] shadow-[6px_6px_0px_#18181B] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[6px_6px_0px_#FFFDF7] dark:hover:shadow-[10px_10px_0px_#FFFDF7] ${menu.stock <= 0 ? 'opacity-70' : ''}`}
+            >
+              <div className="relative">
+                <div className="aspect-square overflow-hidden bg-[#E7D9B8]">
+                  <img
+                    src={menu.imageUrl || 'https://via.placeholder.com/300'}
+                    alt={menu.name}
+                    className={`w-full h-full object-cover transition-transform duration-300 hover:scale-105 ${menu.stock <= 0 ? 'grayscale opacity-60' : ''}`}
+                  />
+                  {menu.stock <= 0 && (
+                    <div className="absolute top-2 right-2 z-10 border-2 border-[#18181B] bg-[#7F1D1D] text-[#FFFDF7] text-[10px] font-black px-2 py-1 shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7]">
+                      HABIS
+                    </div>
+                  )}
+                </div>
+
+                {/* Overlay aksi */}
+                <div className="absolute inset-0 bg-[#18181B]/60 opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+                  <button
+                    className="border-2 border-[#18181B] bg-[#FFFDF7] p-2 shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[5px_5px_0px_#FFFDF7]"
+                    onClick={() => handleOpenEdit(menu)}
+                    title="Edit Menu"
+                  >
+                    <Pencil className="w-3.5 h-3.5 text-[#18181B] dark:text-[#FFFDF7]" />
+                  </button>
+                  <button
+                    className="border-2 border-[#18181B] bg-[#7F1D1D] p-2 shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[5px_5px_0px_#FFFDF7]"
+                    onClick={() => handleDelete(menu.id, menu.name)}
+                    title="Hapus Menu"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-[#FFFDF7]" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-3 space-y-2">
+                <div>
+                  <h3 className="font-black text-sm line-clamp-1 text-[#18181B] dark:text-[#FFFDF7]">{menu.name}</h3>
+                  <span className={`inline-block mt-1 text-[10px] font-black px-2 py-0.5 border-2 shadow-[2px_2px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] ${CATEGORY_COLORS[menu.category] || 'border-[#18181B] bg-[#E7D9B8] text-[#18181B]'}`}>
+                    {menu.category}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center pt-2 border-t-2 border-[#18181B] dark:border-[#FFFDF7]">
+                  <p className="text-[#7F1D1D] dark:text-[#C9A227] font-black text-sm">
+                    Rp {menu.price.toLocaleString('id-ID')}
+                  </p>
+                  <span className={`text-xs font-black px-2 py-0.5 border-2 shadow-[2px_2px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] ${menu.stock <= 0 ? 'border-[#7F1D1D] bg-[#7F1D1D]/10 text-[#7F1D1D]' : menu.stock <= 5 ? 'border-[#C9A227] bg-[#C9A227]/20 text-[#18181B] dark:text-[#C9A227]' : 'border-[#065F46] bg-[#065F46]/10 text-[#065F46]'}`}>
+                    {menu.stock} stok
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
