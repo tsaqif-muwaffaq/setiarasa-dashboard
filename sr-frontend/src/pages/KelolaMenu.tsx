@@ -54,6 +54,11 @@ const CATEGORY_COLORS: Record<string, string> = {
   'MINUMAN': 'border-[#7F1D1D] bg-[#7F1D1D]/10 text-[#7F1D1D] dark:text-[#FFFDF7]',
 };
 
+const toSafeNumber = (value: unknown) => {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : 0;
+};
+
 export default function KelolaMenu() {
   const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
@@ -78,8 +83,13 @@ export default function KelolaMenu() {
   const { data: menus, isLoading } = useQuery<Menu[]>({
     queryKey: ['menus'],
     queryFn: async () => {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/menu`, axiosConfig);
-      return res.data.data;
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/menu`, axiosConfig);
+        return Array.isArray(res.data?.data) ? res.data.data : [];
+      } catch (error) {
+        console.error('Gagal memuat menu:', error);
+        return [];
+      }
     }
   });
 
@@ -122,10 +132,10 @@ export default function KelolaMenu() {
 
   const handleOpenEdit = (menu: Menu) => {
     setFormData({
-      name: menu.name,
-      price: menu.price.toString(),
-      category: menu.category,
-      stock: menu.stock.toString(),
+      name: menu.name || '',
+      price: String(toSafeNumber(menu.price)),
+      category: menu.category || 'AYAM & BEBEK',
+      stock: String(toSafeNumber(menu.stock)),
       imageUrl: menu.imageUrl || ''
     });
     setEditingId(menu.id);
@@ -175,13 +185,17 @@ export default function KelolaMenu() {
     }
   };
 
-  const filteredMenus = menus?.filter(menu =>
-    menu.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const safeMenus = Array.isArray(menus)
+    ? menus.filter((menu): menu is Menu => Boolean(menu && typeof menu === 'object'))
+    : [];
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const filteredMenus = safeMenus.filter(menu =>
+    (menu?.name || '').toLowerCase().includes(normalizedSearchTerm)
   );
 
-  const totalMenu = menus?.length || 0;
-  const stokHabis = menus?.filter(m => m.stock <= 0).length || 0;
-  const stokMenipis = menus?.filter(m => m.stock > 0 && m.stock <= 5).length || 0;
+  const totalMenu = safeMenus.length;
+  const stokHabis = safeMenus.filter(m => toSafeNumber(m?.stock) <= 0).length;
+  const stokMenipis = safeMenus.filter(m => toSafeNumber(m?.stock) > 0 && toSafeNumber(m?.stock) <= 5).length;
 
   return (
     <div className="space-y-6 pb-10 bg-[#FFFDF7] dark:bg-[#18181B]">
@@ -346,63 +360,70 @@ export default function KelolaMenu() {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
-          {filteredMenus?.map((menu) => (
-            <div
-              key={menu.id}
-              className={`border-4 border-[#18181B] bg-[#FFFDF7] shadow-[6px_6px_0px_#18181B] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[6px_6px_0px_#FFFDF7] dark:hover:shadow-[10px_10px_0px_#FFFDF7] ${menu.stock <= 0 ? 'opacity-70' : ''}`}
-            >
-              <div className="relative">
-                <div className="aspect-square overflow-hidden bg-[#E7D9B8]">
-                  <img
-                    src={menu.imageUrl || 'https://via.placeholder.com/300'}
-                    alt={menu.name}
-                    className={`w-full h-full object-cover transition-transform duration-300 hover:scale-105 ${menu.stock <= 0 ? 'grayscale opacity-60' : ''}`}
-                  />
-                  {menu.stock <= 0 && (
-                    <div className="absolute top-2 right-2 z-10 border-2 border-[#18181B] bg-[#7F1D1D] text-[#FFFDF7] text-[10px] font-black px-2 py-1 shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7]">
-                      HABIS
-                    </div>
-                  )}
+          {filteredMenus.map((menu, index) => {
+            const menuName = menu?.name || 'Menu';
+            const menuCategory = menu?.category || 'LAINNYA';
+            const menuPrice = toSafeNumber(menu?.price);
+            const menuStock = toSafeNumber(menu?.stock);
+
+            return (
+              <div
+                key={menu?.id || `${menuName}-${index}`}
+                className={`border-4 border-[#18181B] bg-[#FFFDF7] shadow-[6px_6px_0px_#18181B] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[6px_6px_0px_#FFFDF7] dark:hover:shadow-[10px_10px_0px_#FFFDF7] ${menuStock <= 0 ? 'opacity-70' : ''}`}
+              >
+                <div className="relative">
+                  <div className="aspect-square overflow-hidden bg-[#E7D9B8]">
+                    <img
+                      src={menu?.imageUrl || 'https://via.placeholder.com/300'}
+                      alt={menuName}
+                      className={`w-full h-full object-cover transition-transform duration-300 hover:scale-105 ${menuStock <= 0 ? 'grayscale opacity-60' : ''}`}
+                    />
+                    {menuStock <= 0 && (
+                      <div className="absolute top-2 right-2 z-10 border-2 border-[#18181B] bg-[#7F1D1D] text-[#FFFDF7] text-[10px] font-black px-2 py-1 shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7]">
+                        HABIS
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Overlay aksi */}
+                  <div className="absolute inset-0 bg-[#18181B]/60 opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+                    <button
+                      className="border-2 border-[#18181B] bg-[#FFFDF7] p-2 shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[5px_5px_0px_#FFFDF7]"
+                      onClick={() => handleOpenEdit(menu)}
+                      title="Edit Menu"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-[#18181B] dark:text-[#FFFDF7]" />
+                    </button>
+                    <button
+                      className="border-2 border-[#18181B] bg-[#7F1D1D] p-2 shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[5px_5px_0px_#FFFDF7]"
+                      onClick={() => handleDelete(menu.id, menuName)}
+                      title="Hapus Menu"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-[#FFFDF7]" />
+                    </button>
+                  </div>
                 </div>
 
-                {/* Overlay aksi */}
-                <div className="absolute inset-0 bg-[#18181B]/60 opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
-                  <button
-                    className="border-2 border-[#18181B] bg-[#FFFDF7] p-2 shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[5px_5px_0px_#FFFDF7]"
-                    onClick={() => handleOpenEdit(menu)}
-                    title="Edit Menu"
-                  >
-                    <Pencil className="w-3.5 h-3.5 text-[#18181B] dark:text-[#FFFDF7]" />
-                  </button>
-                  <button
-                    className="border-2 border-[#18181B] bg-[#7F1D1D] p-2 shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[5px_5px_0px_#FFFDF7]"
-                    onClick={() => handleDelete(menu.id, menu.name)}
-                    title="Hapus Menu"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-[#FFFDF7]" />
-                  </button>
+                <div className="p-3 space-y-2">
+                  <div>
+                    <h3 className="font-black text-sm line-clamp-1 text-[#18181B] dark:text-[#FFFDF7]">{menuName}</h3>
+                    <span className={`inline-block mt-1 text-[10px] font-black px-2 py-0.5 border-2 shadow-[2px_2px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] ${CATEGORY_COLORS[menuCategory] || 'border-[#18181B] bg-[#E7D9B8] text-[#18181B]'}`}>
+                      {menuCategory}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2 border-t-2 border-[#18181B] dark:border-[#FFFDF7]">
+                    <p className="text-[#7F1D1D] dark:text-[#C9A227] font-black text-sm">
+                      Rp {menuPrice.toLocaleString('id-ID')}
+                    </p>
+                    <span className={`text-xs font-black px-2 py-0.5 border-2 shadow-[2px_2px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] ${menuStock <= 0 ? 'border-[#7F1D1D] bg-[#7F1D1D]/10 text-[#7F1D1D]' : menuStock <= 5 ? 'border-[#C9A227] bg-[#C9A227]/20 text-[#18181B] dark:text-[#C9A227]' : 'border-[#065F46] bg-[#065F46]/10 text-[#065F46]'}`}>
+                      {menuStock} stok
+                    </span>
+                  </div>
                 </div>
               </div>
-
-              <div className="p-3 space-y-2">
-                <div>
-                  <h3 className="font-black text-sm line-clamp-1 text-[#18181B] dark:text-[#FFFDF7]">{menu.name}</h3>
-                  <span className={`inline-block mt-1 text-[10px] font-black px-2 py-0.5 border-2 shadow-[2px_2px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] ${CATEGORY_COLORS[menu.category] || 'border-[#18181B] bg-[#E7D9B8] text-[#18181B]'}`}>
-                    {menu.category}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center pt-2 border-t-2 border-[#18181B] dark:border-[#FFFDF7]">
-                  <p className="text-[#7F1D1D] dark:text-[#C9A227] font-black text-sm">
-                    Rp {menu.price.toLocaleString('id-ID')}
-                  </p>
-                  <span className={`text-xs font-black px-2 py-0.5 border-2 shadow-[2px_2px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] ${menu.stock <= 0 ? 'border-[#7F1D1D] bg-[#7F1D1D]/10 text-[#7F1D1D]' : menu.stock <= 5 ? 'border-[#C9A227] bg-[#C9A227]/20 text-[#18181B] dark:text-[#C9A227]' : 'border-[#065F46] bg-[#065F46]/10 text-[#065F46]'}`}>
-                    {menu.stock} stok
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -16,6 +16,12 @@ interface KaryawanData {
   avatar?: string;
 }
 
+const formatSafeDate = (dateString: string | undefined) => {
+  const date = new Date(dateString || '');
+  if (!Number.isFinite(date.getTime())) return '-';
+  return format(date, 'dd MMM yyyy', { locale: id });
+};
+
 // ── Komponen Neubrutalism ──
 function NeoCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
@@ -73,8 +79,13 @@ export default function Karyawan() {
   const { data: employees, isLoading } = useQuery<KaryawanData[]>({
     queryKey: ['employees'],
     queryFn: async () => {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/users`, axiosConfig);
-      return res.data.data;
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/users`, axiosConfig);
+        return Array.isArray(res.data?.data) ? res.data.data : [];
+      } catch (error) {
+        console.error('Gagal memuat data karyawan:', error);
+        return [];
+      }
     },
   });
 
@@ -122,15 +133,19 @@ export default function Karyawan() {
     setFormData({ name: '', email: '', password: '', role: 'KASIR' });
   };
 
-  const filteredEmployees = employees?.filter(
+  const safeEmployees = Array.isArray(employees)
+    ? employees.filter((emp): emp is KaryawanData => Boolean(emp && typeof emp === 'object'))
+    : [];
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const filteredEmployees = safeEmployees.filter(
     (emp) =>
-      emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.email.toLowerCase().includes(searchTerm.toLowerCase())
+      (emp?.name || '').toLowerCase().includes(normalizedSearchTerm) ||
+      (emp?.email || '').toLowerCase().includes(normalizedSearchTerm)
   );
 
-  const totalOwner = employees?.filter(e => e.role === 'OWNER').length || 0;
-  const totalKasir = employees?.filter(e => e.role === 'KASIR').length || 0;
-  const totalDapur = employees?.filter(e => e.role === 'DAPUR').length || 0;
+  const totalOwner = safeEmployees.filter(e => e?.role === 'OWNER').length;
+  const totalKasir = safeEmployees.filter(e => e?.role === 'KASIR').length;
+  const totalDapur = safeEmployees.filter(e => e?.role === 'DAPUR').length;
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -183,7 +198,7 @@ export default function Karyawan() {
       <div className="flex flex-wrap gap-2">
         <div className="flex items-center gap-2 border-2 border-[#18181B] bg-[#FFFDF7] px-3 py-1.5 shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[3px_3px_0px_#FFFDF7]">
           <Users className="w-3.5 h-3.5 text-[#7F1D1D] dark:text-[#C9A227]" />
-          <span className="text-xs font-black text-[#18181B] dark:text-[#FFFDF7]">{employees?.length || 0} Total Staf</span>
+          <span className="text-xs font-black text-[#18181B] dark:text-[#FFFDF7]">{safeEmployees.length} Total Staf</span>
         </div>
         {totalOwner > 0 && (
           <div className="flex items-center gap-2 border-2 border-[#7F1D1D] bg-[#7F1D1D]/10 px-3 py-1.5 shadow-[3px_3px_0px_#18181B] dark:border-[#C9A227] dark:bg-[#7F1D1D]/30 dark:shadow-[3px_3px_0px_#FFFDF7]">
@@ -334,46 +349,52 @@ export default function Karyawan() {
                   </td>
                 </tr>
               ) : (
-                filteredEmployees?.map((emp) => (
-                  <tr key={emp.id} className="border-b-2 border-[#18181B]/20 hover:bg-[#C9A227]/10 dark:border-[#FFFDF7]/10 dark:hover:bg-[#C9A227]/20">
-                    <td className="py-3 pl-4 pr-2">
-                      <div className="flex items-center gap-3">
-                        {/* Avatar - Menggunakan foto profile jika ada, fallback ke inisial */}
-                        {emp.avatar ? (
-                          <img
-                            src={emp.avatar}
-                            alt={emp.name}
-                            className={`w-8 h-8 border-2 border-[#18181B] object-cover shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7] ${getAvatarStyle(emp.role)}`}
-                          />
-                        ) : (
-                          <div className={`w-8 h-8 border-2 border-[#18181B] flex items-center justify-center text-xs font-black shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7] ${getAvatarStyle(emp.role)}`}>
-                            {emp.name.charAt(0).toUpperCase()}
+                filteredEmployees.map((emp, index) => {
+                  const employeeName = emp?.name || 'Staf';
+                  const employeeEmail = emp?.email || '-';
+                  const employeeRole = emp?.role || '';
+
+                  return (
+                    <tr key={emp?.id || `${employeeEmail}-${index}`} className="border-b-2 border-[#18181B]/20 hover:bg-[#C9A227]/10 dark:border-[#FFFDF7]/10 dark:hover:bg-[#C9A227]/20">
+                      <td className="py-3 pl-4 pr-2">
+                        <div className="flex items-center gap-3">
+                          {/* Avatar - Menggunakan foto profile jika ada, fallback ke inisial */}
+                          {emp?.avatar ? (
+                            <img
+                              src={emp.avatar}
+                              alt={employeeName}
+                              className={`w-8 h-8 border-2 border-[#18181B] object-cover shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7] ${getAvatarStyle(employeeRole)}`}
+                            />
+                          ) : (
+                            <div className={`w-8 h-8 border-2 border-[#18181B] flex items-center justify-center text-xs font-black shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7] ${getAvatarStyle(employeeRole)}`}>
+                              {employeeName.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-black text-sm text-[#18181B] dark:text-[#FFFDF7]">{employeeName}</div>
+                            <div className="text-xs font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">{employeeEmail}</div>
                           </div>
-                        )}
-                        <div>
-                          <div className="font-black text-sm text-[#18181B] dark:text-[#FFFDF7]">{emp.name}</div>
-                          <div className="text-xs font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">{emp.email}</div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-2 text-sm font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70">
-                      {emp.email}
-                    </td>
-                    <td className="py-3 px-2">{getRoleBadge(emp.role)}</td>
-                    <td className="py-3 px-2 text-sm font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70">
-                      {format(new Date(emp.createdAt), 'dd MMM yyyy', { locale: id })}
-                    </td>
-                    <td className="py-3 pr-4 pl-2 text-right">
-                      <button
-                        className="border-2 border-[#7F1D1D] bg-[#7F1D1D]/10 px-2 py-1 text-xs font-black text-[#7F1D1D] shadow-[2px_2px_0px_#7F1D1D] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_#7F1D1D] active:translate-x-1 active:translate-y-1 active:shadow-[0px_0px_0px_#7F1D1D] dark:border-[#C9A227] dark:bg-[#7F1D1D]/30 dark:text-[#FFFDF7] dark:shadow-[2px_2px_0px_#C9A227] dark:hover:shadow-[4px_4px_0px_#C9A227]"
-                        onClick={() => handleDelete(emp.id, emp.name)}
-                        disabled={deleteEmployeeMutation.isPending}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="py-3 px-2 text-sm font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70">
+                        {employeeEmail}
+                      </td>
+                      <td className="py-3 px-2">{getRoleBadge(employeeRole)}</td>
+                      <td className="py-3 px-2 text-sm font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70">
+                        {formatSafeDate(emp?.createdAt)}
+                      </td>
+                      <td className="py-3 pr-4 pl-2 text-right">
+                        <button
+                          className="border-2 border-[#7F1D1D] bg-[#7F1D1D]/10 px-2 py-1 text-xs font-black text-[#7F1D1D] shadow-[2px_2px_0px_#7F1D1D] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_#7F1D1D] active:translate-x-1 active:translate-y-1 active:shadow-[0px_0px_0px_#7F1D1D] dark:border-[#C9A227] dark:bg-[#7F1D1D]/30 dark:text-[#FFFDF7] dark:shadow-[2px_2px_0px_#C9A227] dark:hover:shadow-[4px_4px_0px_#C9A227]"
+                          onClick={() => handleDelete(emp.id, employeeName)}
+                          disabled={deleteEmployeeMutation.isPending}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

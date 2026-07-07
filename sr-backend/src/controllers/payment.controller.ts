@@ -14,53 +14,138 @@ export const createPayment = async (req: Request, res: Response): Promise<void> 
   try {
     const { orderId, amount, customerName, customerEmail } = req.body;
 
-    const order = await prisma.order.findUnique({ where: { id: orderId } });
-    if (!order) {
-      res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan' });
+    // Validasi input
+    if (!orderId) {
+      res.status(400).json({ 
+        success: false, 
+        message: 'Order ID wajib diisi' 
+      });
       return;
     }
 
-    // 👇 LOGIKA CERDAS: Cek apakah pesanan sudah punya token sebelumnya
+    // 1. Cari pesanan di database
+    const order = await prisma.order.findUnique({ 
+      where: { id: orderId } 
+    });
+    
+    if (!order) {
+      res.status(404).json({ 
+        success: false, 
+        message: 'Pesanan tidak ditemukan' 
+      });
+      return;
+    }
+
+    // 2. Cek apakah pesanan sudah dibayar atau selesai
+    if (order.status === 'PAID' || order.status === 'COMPLETED') {
+      res.status(400).json({ 
+        success: false, 
+        message: 'Pesanan ini sudah dibayar dan tidak memerlukan pembayaran lagi.' 
+      });
+      return;
+    }
+
+    // 3. Cek apakah pesanan sudah expired atau dibatalkan
+    if (order.status === 'EXPIRED' || order.status === 'CANCELLED') {
+      res.status(400).json({ 
+        success: false, 
+        message: 'Pesanan ini sudah tidak berlaku. Silakan buat pesanan baru.' 
+      });
+      return;
+    }
+
+    // 4. ✅ LOGIKA CERDAS: Cek apakah pesanan sudah punya token sebelumnya
     if (order.snapToken) {
-      console.log(`Menggunakan ulang token lama untuk pesanan ${orderId}`);
+      console.log(`[Payment] Menggunakan ulang token lama untuk pesanan ${orderId}`);
+      
       res.status(200).json({
         success: true,
-        token: order.snapToken
+        token: order.snapToken,
+        message: 'Token pembayaran ditemukan, melanjutkan pembayaran...'
       });
       return; // Berhenti di sini, jangan bikin transaksi baru di Midtrans!
     }
 
-    // Jika belum punya token, baru kita request transaksi ke Midtrans (Gunakan ID Asli)
+    // 5. Jika belum punya token, request transaksi baru ke Midtrans
+    console.log(`[Payment] Membuat transaksi baru untuk pesanan ${orderId}`);
+    
+    // Pastikan amount sesuai dengan totalAmount di database
+    const finalAmount = order.totalAmount;
+    
     const parameter = {
       transaction_details: {
-        order_id: orderId, // 👈 Gunakan ID murni, JANGAN pakai Date.now() lagi
-        gross_amount: amount,
+        order_id: orderId, // Gunakan ID murni
+        gross_amount: finalAmount,
       },
       customer_details: {
-        first_name: customerName || 'Pelanggan',
+        first_name: customerName || order.customerName || 'Pelanggan',
         email: customerEmail || 'pelanggan@setiarasa.com',
       },
       callbacks: {
-        finish: 'http://localhost:5173/cek-pesanan'
+        finish: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/status`
       }
     };
 
-    const transaction = await snap.createTransaction(parameter);
+    let transaction;
+    try {
+      transaction = await snap.createTransaction(parameter);
+    } catch (midtransError: any) {
+      console.error('[Payment] Midtrans Error Detail:', midtransError);
+      
+      // Tangani error spesifik dari Midtrans
+      if (midtransError.message?.includes('duplicate') || midtransError.message?.includes('already')) {
+        // Jika Midtrans bilang duplicate, coba ambil ulang status pesanan
+        const updatedOrder = await prisma.order.findUnique({ 
+          where: { id: orderId } 
+        });
+        
+        if (updatedOrder?.snapToken) {
+          // Jika ternyata ada token di database, gunakan itu
+          res.status(200).json({
+            success: true,
+            token: updatedOrder.snapToken,
+            message: 'Token pembayaran ditemukan, melanjutkan pembayaran...'
+          });
+          return;
+        }
+      }
+      
+      // Lempar error untuk ditangani di catch utama
+      throw new Error(`Midtrans: ${midtransError.message || 'Gagal membuat transaksi'}`);
+    }
 
-    // 👇 SIMPAN token baru tersebut ke database kita
+    // 6. ✅ SIMPAN token baru ke database
     await prisma.order.update({
       where: { id: orderId },
       data: { snapToken: transaction.token }
     });
 
+    console.log(`[Payment] Token berhasil dibuat dan disimpan untuk pesanan ${orderId}`);
+
     res.status(200).json({
       success: true,
       token: transaction.token,
-      redirect_url: transaction.redirect_url
+      redirect_url: transaction.redirect_url,
+      message: 'Transaksi pembayaran berhasil dibuat'
     });
+    
   } catch (error) {
-    console.error('Midtrans Error:', error);
-    res.status(500).json({ success: false, message: 'Gagal memproses pembayaran' });
+    console.error('[Payment] Error createPayment:', error);
+    
+    // Kirim pesan error yang informatif ke frontend
+    let errorMessage = 'Gagal memproses pembayaran. Silakan coba lagi.';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    // Jangan kirim stack trace ke production, tapi berikan pesan yang jelas
+    res.status(500).json({ 
+      success: false, 
+      message: errorMessage,
+      // Tambahkan error code untuk debugging (opsional)
+      code: error instanceof Error ? error.name : 'UNKNOWN_ERROR'
+    });
   }
 };
 

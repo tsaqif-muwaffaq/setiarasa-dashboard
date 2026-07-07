@@ -54,6 +54,11 @@ const emptyDashboardStats: DashboardStats = {
   topMenus: [],
 };
 
+const toSafeNumber = (value: unknown) => {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : 0;
+};
+
 // ── Komponen Neubrutalism ──
 function NeoCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
@@ -122,8 +127,8 @@ export default function Dashboard() {
     refetchInterval: 10000,
   });
 
-  const totalRevenue = stats?.totalRevenue || 0;
-  const orderCount = stats?.orderCount || 0;
+  const totalRevenue = toSafeNumber(stats?.totalRevenue);
+  const orderCount = toSafeNumber(stats?.orderCount);
   const averageOrderValue = orderCount > 0 ? totalRevenue / orderCount : 0;
 
   const weeklyData = Array.isArray(stats?.weeklyRevenue) ? stats.weeklyRevenue : [];
@@ -255,7 +260,7 @@ export default function Dashboard() {
                   {label}
                 </p>
                 <p className="text-sm font-black text-[#7F1D1D] dark:text-[#C9A227]">
-                  Rp {breakdown[key as keyof PaymentBreakdown]?.toLocaleString('id-ID') || 0}
+                  Rp {toSafeNumber(breakdown[key as keyof PaymentBreakdown]).toLocaleString('id-ID')}
                 </p>
               </div>
             </NeoCard>
@@ -395,34 +400,39 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-2">
-                {topMenus?.map((menu, index) => (
-                  <div 
-                    key={menu.id} 
-                    className="flex items-center justify-between border-2 border-[#18181B]/20 p-3 dark:border-[#FFFDF7]/10 hover:border-[#C9A227]/50 dark:hover:border-[#C9A227]/30 transition-all duration-200 hover-scale-bounce"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className={`flex h-7 w-7 shrink-0 items-center justify-center border-2 border-[#18181B] text-xs font-black shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7] ${rankColors[index]}`}>
-                        {index + 1}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-sm font-black text-[#18181B] dark:text-[#FFFDF7] truncate">
-                          {menu.name}
+                {topMenus.map((menu, index) => {
+                  const menuRevenue = toSafeNumber(menu?.revenue);
+                  const menuSold = toSafeNumber(menu?.sold);
+
+                  return (
+                    <div 
+                      key={menu?.id || `${menu?.name || 'menu'}-${index}`} 
+                      className="flex items-center justify-between border-2 border-[#18181B]/20 p-3 dark:border-[#FFFDF7]/10 hover:border-[#C9A227]/50 dark:hover:border-[#C9A227]/30 transition-all duration-200 hover-scale-bounce"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center border-2 border-[#18181B] text-xs font-black shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7] ${rankColors[index]}`}>
+                          {index + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-black text-[#18181B] dark:text-[#FFFDF7] truncate">
+                            {menu?.name || 'Menu'}
+                          </p>
+                          <p className="text-xs font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">
+                            {menu?.category || 'Kategori'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0 ml-3">
+                        <p className="text-sm font-black text-[#18181B] dark:text-[#FFFDF7]">
+                          {menuSold} Qty
                         </p>
-                        <p className="text-xs font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">
-                          {menu.category}
+                        <p className="text-xs font-bold text-[#7F1D1D] dark:text-[#C9A227]">
+                          Rp {menuRevenue.toLocaleString('id-ID')}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right shrink-0 ml-3">
-                      <p className="text-sm font-black text-[#18181B] dark:text-[#FFFDF7]">
-                        {menu.sold} Qty
-                      </p>
-                      <p className="text-xs font-bold text-[#7F1D1D] dark:text-[#C9A227]">
-                        Rp {menu.revenue.toLocaleString('id-ID')}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

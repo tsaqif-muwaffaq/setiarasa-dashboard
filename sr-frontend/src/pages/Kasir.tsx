@@ -103,6 +103,11 @@ interface IncomingOrder {
 
 const ACTIONABLE_STATUSES: OrderStatus[] = ['PENDING_PAYMENT', 'PAID'];
 
+const toSafeNumber = (value: unknown) => {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : 0;
+};
+
 export default function Kasir() {
   const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
@@ -179,12 +184,12 @@ export default function Kasir() {
   const filteredMenus = useMemo(() => {
     if (!Array.isArray(menus)) return [];
     if (!normalizedMenuSearch) return menus;
-    return menus.filter((menu) => menu.name.toLowerCase().includes(normalizedMenuSearch));
+    return menus.filter((menu) => (menu?.name || '').toLowerCase().includes(normalizedMenuSearch));
   }, [menus, normalizedMenuSearch]);
 
   const actionableOrders = useMemo(() => {
     if (!Array.isArray(incomingOrders)) return [];
-    return incomingOrders.filter((o) => ACTIONABLE_STATUSES.includes(o.status));
+    return incomingOrders.filter((o) => o?.status ? ACTIONABLE_STATUSES.includes(o.status) : false);
   }, [incomingOrders]);
 
   useEffect(() => {
@@ -199,8 +204,8 @@ export default function Kasir() {
     if (!normalizedIncomingSearch) return actionableOrders;
     return actionableOrders.filter(
       (o) =>
-        o.customerName?.toLowerCase().includes(normalizedIncomingSearch) ||
-        o.id.toLowerCase().includes(normalizedIncomingSearch)
+        (o?.customerName || '').toLowerCase().includes(normalizedIncomingSearch) ||
+        (o?.id || '').toLowerCase().includes(normalizedIncomingSearch)
     );
   }, [actionableOrders, normalizedIncomingSearch]);
 
@@ -214,7 +219,7 @@ export default function Kasir() {
       return res.data;
     },
     onSuccess: async (data, variables) => {
-      const order = data.data;
+      const order = data?.data || {};
 
       try {
         if (variables.paymentMethod === 'CASH') {
@@ -318,22 +323,31 @@ export default function Kasir() {
   // ============================================================
 
   const addToCart = (menu: Menu) => {
-    if (menu.stock <= 0) {
+    if (!menu?.id) {
+      toast.error('Data menu tidak valid.');
+      return;
+    }
+
+    const menuStock = toSafeNumber(menu?.stock);
+    const menuPrice = toSafeNumber(menu?.price);
+    const menuName = menu?.name || 'Menu';
+
+    if (menuStock <= 0) {
       toast.error('Stok menu ini habis!');
       return;
     }
     setCart((prev) => {
       const existing = prev.find((item) => item.menuId === menu.id);
       if (existing) {
-        if (existing.quantity >= menu.stock) {
-          toast.error(`Stok maksimal ${menu.name} adalah ${menu.stock}`);
+        if (existing.quantity >= menuStock) {
+          toast.error(`Stok maksimal ${menuName} adalah ${menuStock}`);
           return prev;
         }
         return prev?.map((item) =>
           item.menuId === menu.id ? { ...item, quantity: item.quantity + 1 } : item
         ) ?? prev;
       }
-      return [...prev, { menuId: menu.id, name: menu.name, price: menu.price, quantity: 1 }];
+      return [...prev, { menuId: menu.id, name: menuName, price: menuPrice, quantity: 1 }];
     });
   };
 
@@ -353,8 +367,8 @@ export default function Kasir() {
     );
   };
 
-  const totalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const totalAmount = cart.reduce((sum, item) => sum + toSafeNumber(item.price) * toSafeNumber(item.quantity), 0);
+  const totalItems = cart.reduce((sum, item) => sum + toSafeNumber(item.quantity), 0);
 
   const handleCheckout = () => {
     if (cart.length === 0) {
@@ -371,8 +385,8 @@ export default function Kasir() {
       paymentMethod: paymentType === 'CASH' ? 'CASH' : 'QRIS',
       items: cart?.map((item) => ({
         menuId: item.menuId,
-        quantity: item.quantity,
-        price: item.price,
+        quantity: toSafeNumber(item.quantity),
+        price: toSafeNumber(item.price),
       })) ?? [],
     };
     checkoutMutation.mutate(payload);
@@ -391,8 +405,8 @@ export default function Kasir() {
       ?.map(
         (item: any) => `
     <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 3px;">
-      <span>${item.quantity}x ${item.name || item.menu?.name}</span>
-      <span>Rp ${(item.price * item.quantity).toLocaleString('id-ID')}</span>
+      <span>${toSafeNumber(item.quantity)}x ${item.name || item.menu?.name || 'Menu'}</span>
+      <span>Rp ${(toSafeNumber(item.price) * toSafeNumber(item.quantity)).toLocaleString('id-ID')}</span>
     </div>
   `
       )
@@ -406,7 +420,7 @@ export default function Kasir() {
     printWindow.document.write(`
     <html>
       <head>
-        <title>Struk # ${orderData.id.slice(0, 8)}</title>
+        <title>Struk # ${(orderData?.id || '').slice(0, 8)}</title>
         <style>
           @page { size: auto; margin: 0mm; }
           body { 
@@ -448,7 +462,7 @@ export default function Kasir() {
         
         <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px;">
           <span>TOTAL:</span>
-          <span>Rp ${orderData.totalAmount?.toLocaleString('id-ID')}</span>
+          <span>Rp ${toSafeNumber(orderData?.totalAmount).toLocaleString('id-ID')}</span>
         </div>
         
         <div class="line"></div>
@@ -558,48 +572,53 @@ const CartPanel = () => (
           <p className="text-xs font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 text-center">Pilih menu di sebelah kiri</p>
         </div>
       ) : (
-        cart?.map((item) => (
-          <div
-            key={item.menuId}
-            className="flex items-center gap-3 border-2 border-[#18181B]/20 p-2 hover:bg-[#C9A227]/10 dark:border-[#FFFDF7]/10 dark:hover:bg-[#C9A227]/20 transition-colors card-hover-frame"
-          >
-            <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-black text-[#18181B] dark:text-[#FFFDF7] line-clamp-1">{item.name}</h4>
-              <p className="text-xs font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70">
-                Rp {item.price.toLocaleString('id-ID')}
-              </p>
-            </div>
+        cart.map((item) => {
+          const itemPrice = toSafeNumber(item?.price);
+          const itemQuantity = toSafeNumber(item?.quantity);
 
-            <div className="flex items-center gap-1 border-2 border-[#18181B] p-0.5 shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7]">
-              <button
-                className="w-6 h-6 flex items-center justify-center hover:bg-[#C9A227]/20 transition-colors"
-                onClick={() => updateQuantity(item.menuId, -1)}
-              >
-                <Minus className="w-3 h-3" />
-              </button>
-              <span className="text-sm font-black w-5 text-center text-[#18181B] dark:text-[#FFFDF7]">{item.quantity}</span>
-              <button
-                className="w-6 h-6 flex items-center justify-center hover:bg-[#C9A227]/20 transition-colors"
-                onClick={() => updateQuantity(item.menuId, 1)}
-              >
-                <Plus className="w-3 h-3" />
-              </button>
-            </div>
-
-            <span className="text-xs font-black text-[#18181B] dark:text-[#FFFDF7] w-16 text-right shrink-0">
-              Rp {(item.price * item.quantity).toLocaleString('id-ID')}
-            </span>
-
-            {/* Tombol Hapus - Sekarang selalu terlihat dengan background dan border yang jelas */}
-            <button
-              className="w-8 h-8 border-2 border-[#7F1D1D] bg-[#7F1D1D]/10 flex items-center justify-center transition-all hover:bg-[#7F1D1D] hover:text-[#FFFDF7] dark:border-[#C9A227] dark:bg-[#7F1D1D]/30 dark:hover:bg-[#7F1D1D] shrink-0 hover:scale-110 active:scale-95"
-              onClick={() => removeFromCart(item.menuId)}
-              title="Hapus item dari keranjang"
+          return (
+            <div
+              key={item.menuId}
+              className="flex items-center gap-3 border-2 border-[#18181B]/20 p-2 hover:bg-[#C9A227]/10 dark:border-[#FFFDF7]/10 dark:hover:bg-[#C9A227]/20 transition-colors card-hover-frame"
             >
-              <Trash2 className="w-4 h-4 text-[#7F1D1D] dark:text-[#FFFDF7] hover:text-[#FFFDF7]" />
-            </button>
-          </div>
-        ))
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-black text-[#18181B] dark:text-[#FFFDF7] line-clamp-1">{item?.name || 'Menu'}</h4>
+                <p className="text-xs font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70">
+                  Rp {itemPrice.toLocaleString('id-ID')}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-1 border-2 border-[#18181B] p-0.5 shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7]">
+                <button
+                  className="w-6 h-6 flex items-center justify-center hover:bg-[#C9A227]/20 transition-colors"
+                  onClick={() => updateQuantity(item.menuId, -1)}
+                >
+                  <Minus className="w-3 h-3" />
+                </button>
+                <span className="text-sm font-black w-5 text-center text-[#18181B] dark:text-[#FFFDF7]">{itemQuantity}</span>
+                <button
+                  className="w-6 h-6 flex items-center justify-center hover:bg-[#C9A227]/20 transition-colors"
+                  onClick={() => updateQuantity(item.menuId, 1)}
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+
+              <span className="text-xs font-black text-[#18181B] dark:text-[#FFFDF7] w-16 text-right shrink-0">
+                Rp {(itemPrice * itemQuantity).toLocaleString('id-ID')}
+              </span>
+
+              {/* Tombol Hapus - Sekarang selalu terlihat dengan background dan border yang jelas */}
+              <button
+                className="w-8 h-8 border-2 border-[#7F1D1D] bg-[#7F1D1D]/10 flex items-center justify-center transition-all hover:bg-[#7F1D1D] hover:text-[#FFFDF7] dark:border-[#C9A227] dark:bg-[#7F1D1D]/30 dark:hover:bg-[#7F1D1D] shrink-0 hover:scale-110 active:scale-95"
+                onClick={() => removeFromCart(item.menuId)}
+                title="Hapus item dari keranjang"
+              >
+                <Trash2 className="w-4 h-4 text-[#7F1D1D] dark:text-[#FFFDF7] hover:text-[#FFFDF7]" />
+              </button>
+            </div>
+          );
+        })
       )}
     </div>
 
@@ -703,69 +722,75 @@ const CartPanel = () => (
             Belum ada pesanan.
           </div>
         ) : (
-          filteredIncomingOrders?.map((order, index) => (
-            <NeoCard 
-              key={order.id} 
-              className={`p-4 animate-fade-in-up-delay-${(index % 4) + 1}`}
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <p className="font-black text-sm text-[#18181B] dark:text-[#FFFDF7]">{order.customerName}</p>
-                  <p className="text-xs font-mono font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">{order.id.slice(0, 8)}...</p>
+          filteredIncomingOrders.map((order, index) => {
+            const orderId = order?.id || '';
+            const orderItems = Array.isArray(order?.items) ? order.items : [];
+            const orderTotalAmount = toSafeNumber(order?.totalAmount);
+
+            return (
+              <NeoCard 
+                key={orderId || index} 
+                className={`p-4 animate-fade-in-up-delay-${(index % 4) + 1}`}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="font-black text-sm text-[#18181B] dark:text-[#FFFDF7]">{order?.customerName || 'Pelanggan'}</p>
+                    <p className="text-xs font-mono font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">{orderId.slice(0, 8)}...</p>
+                  </div>
+                  <span
+                    className={`border-2 px-2 py-0.5 text-[11px] font-black shadow-[2px_2px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] ${
+                      order?.status === 'PAID'
+                        ? 'border-[#065F46] bg-[#065F46]/10 text-[#065F46] dark:border-[#34D399] dark:bg-[#065F46]/30 dark:text-[#34D399]'
+                        : 'border-[#7F1D1D] bg-[#7F1D1D]/10 text-[#7F1D1D] dark:border-[#C9A227] dark:bg-[#7F1D1D]/30 dark:text-[#FFFDF7]'
+                    } animate-pulse-soft-premium`}
+                  >
+                    {order?.status === 'PAID' ? 'Sudah Dibayar' : 'Menunggu Pembayaran'}
+                  </span>
                 </div>
-                <span
-                  className={`border-2 px-2 py-0.5 text-[11px] font-black shadow-[2px_2px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] ${
-                    order.status === 'PAID'
-                      ? 'border-[#065F46] bg-[#065F46]/10 text-[#065F46] dark:border-[#34D399] dark:bg-[#065F46]/30 dark:text-[#34D399]'
-                      : 'border-[#7F1D1D] bg-[#7F1D1D]/10 text-[#7F1D1D] dark:border-[#C9A227] dark:bg-[#7F1D1D]/30 dark:text-[#FFFDF7]'
-                  } animate-pulse-soft-premium`}
-                >
-                  {order.status === 'PAID' ? 'Sudah Dibayar' : 'Menunggu Pembayaran'}
-                </span>
-              </div>
 
-              <div className="text-xs font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 mb-2">
-                {order.items?.map((i) => `${i.quantity}x ${i.menu?.name ?? 'Menu'}`).join(', ') || 'Belum ada item'}
-              </div>
-
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-black border-2 border-[#18181B] px-2 py-0.5 shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7]">
-                  {order.paymentMethod === 'CASH' ? 'Tunai' : 'QRIS/Online'}
-                </span>
-                <span className="font-black text-[#7F1D1D] dark:text-[#C9A227]">
-                  Rp {order.totalAmount.toLocaleString('id-ID')}
-                </span>
-              </div>
-
-              {order.status === 'PENDING_PAYMENT' && order.paymentMethod === 'CASH' && (
-                <button
-                  className="w-full border-4 border-[#18181B] bg-[#065F46] text-[#FFFDF7] font-black py-2 shadow-[6px_6px_0px_#18181B] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[2px_2px_0px_#18181B] disabled:opacity-50 dark:border-[#FFFDF7] dark:shadow-[6px_6px_0px_#FFFDF7] dark:hover:shadow-[10px_10px_0px_#FFFDF7] card-lift-premium"
-                  onClick={() => confirmCashMutation.mutate(order.id)}
-                  disabled={confirmCashMutation.isPending}
-                >
-                  <Banknote className="w-4 h-4 inline mr-1.5" />
-                  Konfirmasi Pembayaran
-                </button>
-              )}
-
-              {order.status === 'PENDING_PAYMENT' && order.paymentMethod !== 'CASH' && (
-                <div className="text-xs text-center font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 italic py-1">
-                  Menunggu konfirmasi otomatis dari Midtrans...
+                <div className="text-xs font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 mb-2">
+                  {orderItems.map((i) => `${toSafeNumber(i?.quantity)}x ${i?.menu?.name ?? 'Menu'}`).join(', ') || 'Belum ada item'}
                 </div>
-              )}
 
-              {order.status === 'PAID' && (
-                <button
-                  className="w-full border-4 border-[#18181B] bg-[#7F1D1D] text-[#FFFDF7] font-black py-2 shadow-[6px_6px_0px_#18181B] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[2px_2px_0px_#18181B] disabled:opacity-50 dark:border-[#FFFDF7] dark:shadow-[6px_6px_0px_#FFFDF7] dark:hover:shadow-[10px_10px_0px_#FFFDF7] card-lift-premium"
-                  onClick={() => acceptOrderMutation.mutate(order.id)}
-                  disabled={acceptOrderMutation.isPending}
-                >
-                  <Check className="w-4 h-4 inline mr-1.5" />
-                  Terima Pesanan
-                </button>
-              )}
-            </NeoCard>
-          ))
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-black border-2 border-[#18181B] px-2 py-0.5 shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7]">
+                    {order?.paymentMethod === 'CASH' ? 'Tunai' : 'QRIS/Online'}
+                  </span>
+                  <span className="font-black text-[#7F1D1D] dark:text-[#C9A227]">
+                    Rp {orderTotalAmount.toLocaleString('id-ID')}
+                  </span>
+                </div>
+
+                {order?.status === 'PENDING_PAYMENT' && order?.paymentMethod === 'CASH' && (
+                  <button
+                    className="w-full border-4 border-[#18181B] bg-[#065F46] text-[#FFFDF7] font-black py-2 shadow-[6px_6px_0px_#18181B] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[2px_2px_0px_#18181B] disabled:opacity-50 dark:border-[#FFFDF7] dark:shadow-[6px_6px_0px_#FFFDF7] dark:hover:shadow-[10px_10px_0px_#FFFDF7] card-lift-premium"
+                    onClick={() => confirmCashMutation.mutate(orderId)}
+                    disabled={confirmCashMutation.isPending}
+                  >
+                    <Banknote className="w-4 h-4 inline mr-1.5" />
+                    Konfirmasi Pembayaran
+                  </button>
+                )}
+
+                {order?.status === 'PENDING_PAYMENT' && order?.paymentMethod !== 'CASH' && (
+                  <div className="text-xs text-center font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 italic py-1">
+                    Menunggu konfirmasi otomatis dari Midtrans...
+                  </div>
+                )}
+
+                {order?.status === 'PAID' && (
+                  <button
+                    className="w-full border-4 border-[#18181B] bg-[#7F1D1D] text-[#FFFDF7] font-black py-2 shadow-[6px_6px_0px_#18181B] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[2px_2px_0px_#18181B] disabled:opacity-50 dark:border-[#FFFDF7] dark:shadow-[6px_6px_0px_#FFFDF7] dark:hover:shadow-[10px_10px_0px_#FFFDF7] card-lift-premium"
+                    onClick={() => acceptOrderMutation.mutate(orderId)}
+                    disabled={acceptOrderMutation.isPending}
+                  >
+                    <Check className="w-4 h-4 inline mr-1.5" />
+                    Terima Pesanan
+                  </button>
+                )}
+              </NeoCard>
+            );
+          })
         )}
       </div>
     </div>
@@ -860,54 +885,60 @@ const CartPanel = () => (
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {filteredMenus?.map((menu, index) => (
-                        <div
-                          key={menu.id}
-                          className={`border-4 border-[#18181B] bg-[#FFFDF7] shadow-[4px_4px_0px_#18181B] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[8px_8px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[4px_4px_0px_#FFFDF7] dark:hover:shadow-[8px_8px_0px_#FFFDF7] animate-fade-in-up-delay-${(index % 4) + 1} ${
-                            menu.stock <= 0 ? 'opacity-55 cursor-not-allowed' : 'cursor-pointer hover-scale-bounce'
-                          }`}
-                          onClick={() => menu.stock > 0 && addToCart(menu)}
-                        >
-                          {menu.stock <= 0 && (
-                            <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#18181B]/60 backdrop-blur-[2px]">
-                              <div className="border-4 border-[#18181B] bg-[#7F1D1D] text-[#FFFDF7] px-3 py-1 font-black text-xs tracking-widest shadow-[4px_4px_0px_#18181B] -rotate-12 dark:border-[#FFFDF7] dark:shadow-[4px_4px_0px_#FFFDF7]">
-                                HABIS
+                      {filteredMenus.map((menu, index) => {
+                        const menuName = menu?.name || 'Menu';
+                        const menuPrice = toSafeNumber(menu?.price);
+                        const menuStock = toSafeNumber(menu?.stock);
+
+                        return (
+                          <div
+                            key={menu?.id || `${menuName}-${index}`}
+                            className={`border-4 border-[#18181B] bg-[#FFFDF7] shadow-[4px_4px_0px_#18181B] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[8px_8px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[4px_4px_0px_#FFFDF7] dark:hover:shadow-[8px_8px_0px_#FFFDF7] animate-fade-in-up-delay-${(index % 4) + 1} ${
+                              menuStock <= 0 ? 'opacity-55 cursor-not-allowed' : 'cursor-pointer hover-scale-bounce'
+                            }`}
+                            onClick={() => menuStock > 0 && addToCart(menu)}
+                          >
+                            {menuStock <= 0 && (
+                              <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#18181B]/60 backdrop-blur-[2px]">
+                                <div className="border-4 border-[#18181B] bg-[#7F1D1D] text-[#FFFDF7] px-3 py-1 font-black text-xs tracking-widest shadow-[4px_4px_0px_#18181B] -rotate-12 dark:border-[#FFFDF7] dark:shadow-[4px_4px_0px_#FFFDF7]">
+                                  HABIS
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="p-2 relative">
+                              <div className="aspect-square overflow-hidden mb-2 bg-[#E7D9B8] border-2 border-[#18181B] dark:border-[#FFFDF7]">
+                                <img
+                                  src={menu?.imageUrl || 'https://via.placeholder.com/300'}
+                                  alt={menuName}
+                                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                                />
+                              </div>
+
+                              <p className="text-[10px] font-black uppercase tracking-wider text-[#18181B]/50 dark:text-[#FFFDF7]/50 mb-0.5">
+                                {menu?.category || 'LAINNYA'}
+                              </p>
+
+                              <h3 className="font-black text-sm leading-tight line-clamp-1 text-[#18181B] dark:text-[#FFFDF7]">
+                                {menuName}
+                              </h3>
+
+                              <div className="flex justify-between items-center mt-2 pt-2 border-t-2 border-[#18181B]/20 dark:border-[#FFFDF7]/20">
+                                <p className="text-[#7F1D1D] dark:text-[#C9A227] font-black text-sm">
+                                  Rp {menuPrice.toLocaleString('id-ID')}
+                                </p>
+                                <span className={`text-[10px] font-black px-1.5 py-0.5 border-2 shadow-[2px_2px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] ${
+                                  menuStock <= 10
+                                    ? 'border-[#C9A227] bg-[#C9A227]/20 text-[#18181B] dark:border-[#C9A227] dark:bg-[#C9A227]/20 dark:text-[#C9A227]'
+                                    : 'border-[#065F46] bg-[#065F46]/10 text-[#065F46] dark:border-[#34D399] dark:bg-[#065F46]/30 dark:text-[#34D399]'
+                                }`}>
+                                  Sisa {menuStock}
+                                </span>
                               </div>
                             </div>
-                          )}
-
-                          <div className="p-2 relative">
-                            <div className="aspect-square overflow-hidden mb-2 bg-[#E7D9B8] border-2 border-[#18181B] dark:border-[#FFFDF7]">
-                              <img
-                                src={menu.imageUrl}
-                                alt={menu.name}
-                                className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                              />
-                            </div>
-
-                            <p className="text-[10px] font-black uppercase tracking-wider text-[#18181B]/50 dark:text-[#FFFDF7]/50 mb-0.5">
-                              {menu.category}
-                            </p>
-
-                            <h3 className="font-black text-sm leading-tight line-clamp-1 text-[#18181B] dark:text-[#FFFDF7]">
-                              {menu.name}
-                            </h3>
-
-                            <div className="flex justify-between items-center mt-2 pt-2 border-t-2 border-[#18181B]/20 dark:border-[#FFFDF7]/20">
-                              <p className="text-[#7F1D1D] dark:text-[#C9A227] font-black text-sm">
-                                Rp {menu.price.toLocaleString('id-ID')}
-                              </p>
-                              <span className={`text-[10px] font-black px-1.5 py-0.5 border-2 shadow-[2px_2px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] ${
-                                menu.stock <= 10
-                                  ? 'border-[#C9A227] bg-[#C9A227]/20 text-[#18181B] dark:border-[#C9A227] dark:bg-[#C9A227]/20 dark:text-[#C9A227]'
-                                  : 'border-[#065F46] bg-[#065F46]/10 text-[#065F46] dark:border-[#34D399] dark:bg-[#065F46]/30 dark:text-[#34D399]'
-                              }`}>
-                                Sisa {menu.stock}
-                              </span>
-                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

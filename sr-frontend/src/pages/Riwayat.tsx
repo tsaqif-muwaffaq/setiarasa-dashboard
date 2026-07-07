@@ -30,7 +30,7 @@ interface OrderItem {
   id: string;
   quantity: number;
   price: number;
-  menu: { name: string; imageUrl: string };
+  menu?: { name?: string; imageUrl?: string };
 }
 
 interface Order {
@@ -45,8 +45,19 @@ interface Order {
   source: 'OFFLINE' | 'ONLINE';
 }
 
+const toSafeNumber = (value: unknown) => {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : 0;
+};
+
+const formatSafeDate = (dateString: string | undefined, dateFormat: string) => {
+  const date = new Date(dateString || '');
+  if (!Number.isFinite(date.getTime())) return '-';
+  return format(date, dateFormat, { locale: id });
+};
+
 // ── Komponen Badge Metode Pembayaran ──
-function PaymentMethodBadge({ method }: { method: string }) {
+function PaymentMethodBadge({ method }: { method?: string }) {
   const map: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
     CASH: { 
       label: 'Tunai', 
@@ -80,8 +91,8 @@ function PaymentMethodBadge({ method }: { method: string }) {
     },
   };
 
-  const { label, className, icon } = map[method] ?? { 
-    label: method, 
+  const { label, className, icon } = map[method || ''] ?? { 
+    label: method || '-', 
     className: 'border-[#18181B] bg-[#FFFDF7] text-[#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:text-[#FFFDF7]',
     icon: null
   };
@@ -95,7 +106,7 @@ function PaymentMethodBadge({ method }: { method: string }) {
 }
 
 // ── Komponen Badge Asal Pesanan ──
-function SourceBadge({ source }: { source: 'OFFLINE' | 'ONLINE' }) {
+function SourceBadge({ source }: { source?: string }) {
   const isOffline = source === 'OFFLINE';
   return (
     <span className={`inline-flex items-center border-2 px-2 py-0.5 text-[10px] font-black shadow-[2px_2px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] ${
@@ -118,15 +129,15 @@ function SourceBadge({ source }: { source: 'OFFLINE' | 'ONLINE' }) {
   );
 }
 
-function StatusPill({ status }: { status: Order['status'] }) {
-  const map: Record<Order['status'], { label: string; className: string }> = {
+function StatusPill({ status }: { status?: Order['status'] | string }) {
+  const map: Record<string, { label: string; className: string }> = {
     COMPLETED: { label: 'Selesai', className: 'border-[#065F46] bg-[#065F46]/10 text-[#065F46] dark:border-[#34D399] dark:bg-[#065F46]/30 dark:text-[#34D399]' },
     COOKING: { label: 'Dimasak', className: 'border-[#C9A227] bg-[#C9A227]/20 text-[#18181B] dark:border-[#C9A227] dark:bg-[#C9A227]/20 dark:text-[#C9A227]' },
     PENDING: { label: 'Menunggu', className: 'border-[#C9A227] bg-[#C9A227]/10 text-[#18181B] dark:border-[#C9A227] dark:bg-[#C9A227]/15 dark:text-[#C9A227]' },
     PENDING_PAYMENT: { label: 'Belum Bayar', className: 'border-[#7F1D1D] bg-[#7F1D1D]/10 text-[#7F1D1D] dark:border-[#C9A227] dark:bg-[#7F1D1D]/30 dark:text-[#FFFDF7]' },
     CANCELLED: { label: 'Dibatalkan', className: 'border-[#7F1D1D] bg-[#7F1D1D]/10 text-[#7F1D1D] dark:border-[#7F1D1D] dark:bg-[#7F1D1D]/30 dark:text-[#FFFDF7]' },
   };
-  const { label, className } = map[status] ?? { label: status, className: 'border-[#18181B] bg-[#FFFDF7] text-[#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:text-[#FFFDF7]' };
+  const { label, className } = map[status || ''] ?? { label: status || '-', className: 'border-[#18181B] bg-[#FFFDF7] text-[#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:text-[#FFFDF7]' };
   return (
     <span className={`inline-flex items-center border-2 px-2 py-0.5 text-[10px] font-black shadow-[2px_2px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] ${className}`}>
       {label}
@@ -135,20 +146,22 @@ function StatusPill({ status }: { status: Order['status'] }) {
 }
 
 function OrderRow({ order, onView, index }: { order: Order; onView: () => void; index: number }) {
+  const orderTotalAmount = toSafeNumber(order?.totalAmount);
+
   return (
     <tr className={`border-b-2 border-[#18181B]/20 hover:bg-[#C9A227]/10 dark:border-[#FFFDF7]/10 dark:hover:bg-[#C9A227]/20 transition-colors group animate-slide-left-${(index % 3) + 1}`}>
       <td className="py-3 pl-4 pr-2">
         <p className="text-sm font-black text-[#18181B] dark:text-[#FFFDF7] tabular-nums">
-          {format(new Date(order.createdAt), 'dd MMM yyyy', { locale: id })}
+          {formatSafeDate(order?.createdAt, 'dd MMM yyyy')}
         </p>
         <p className="text-xs font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 tabular-nums">
-          {format(new Date(order.createdAt), 'HH:mm')}
+          {formatSafeDate(order?.createdAt, 'HH:mm')}
         </p>
       </td>
       <td className="py-3 px-2">
-        <p className="text-sm font-black text-[#18181B] dark:text-[#FFFDF7] truncate max-w-[140px]">{order.customerName}</p>
+        <p className="text-sm font-black text-[#18181B] dark:text-[#FFFDF7] truncate max-w-[140px]">{order?.customerName || 'Pelanggan'}</p>
         <p className="text-xs font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">
-          {order.tableNumber || 'Bawa Pulang'}
+          {order?.tableNumber || 'Bawa Pulang'}
         </p>
       </td>
       <td className="py-3 px-2">
@@ -162,7 +175,7 @@ function OrderRow({ order, onView, index }: { order: Order; onView: () => void; 
       </td>
       <td className="py-3 px-2 text-right">
         <p className="text-sm font-black text-[#7F1D1D] dark:text-[#C9A227] tabular-nums">
-          Rp {order.totalAmount.toLocaleString('id-ID')}
+          Rp {orderTotalAmount.toLocaleString('id-ID')}
         </p>
       </td>
       <td className="py-3 pr-4 pl-2 text-right">
@@ -186,27 +199,38 @@ export default function Riwayat() {
   const { data: orders, isLoading, refetch } = useQuery<Order[]>({
     queryKey: ['orderHistory'],
     queryFn: async () => {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders/history`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return res.data.data;
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders/history`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        return Array.isArray(res.data?.data) ? res.data.data : [];
+      } catch (error) {
+        console.error('Gagal memuat riwayat pesanan:', error);
+        return [];
+      }
     },
   });
 
-  const filteredOrders = orders?.filter(
+  const safeOrders = Array.isArray(orders)
+    ? orders.filter((order): order is Order => Boolean(order && typeof order === 'object'))
+    : [];
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const filteredOrders = safeOrders.filter(
     (order) =>
-      order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.id.toLowerCase().includes(searchTerm.toLowerCase())
+      (order?.customerName || '').toLowerCase().includes(normalizedSearchTerm) ||
+      (order?.id || '').toLowerCase().includes(normalizedSearchTerm)
   );
 
-  const totalSelesai = orders?.filter((o) => o.status === 'COMPLETED').length ?? 0;
-  const totalPending = orders?.filter((o) => o.status === 'PENDING').length ?? 0;
-  const totalRevenue = orders
-    ?.filter((o) => o.status === 'COMPLETED')
-    .reduce((sum, o) => sum + o.totalAmount, 0) ?? 0;
+  const totalSelesai = safeOrders.filter((o) => o?.status === 'COMPLETED').length;
+  const totalPending = safeOrders.filter((o) => o?.status === 'PENDING').length;
+  const totalRevenue = safeOrders
+    .filter((o) => o?.status === 'COMPLETED')
+    .reduce((sum, o) => sum + toSafeNumber(o?.totalAmount), 0);
 
-  const totalOnline = orders?.filter((o) => o.source === 'ONLINE').length ?? 0;
-  const totalOffline = orders?.filter((o) => o.source === 'OFFLINE' || !o.source).length ?? 0;
+  const totalOnline = safeOrders.filter((o) => o?.source === 'ONLINE').length;
+  const totalOffline = safeOrders.filter((o) => o?.source === 'OFFLINE' || !o?.source).length;
+  const selectedOrderItems = Array.isArray(selectedOrder?.items) ? selectedOrder.items : [];
+  const selectedOrderTotalAmount = toSafeNumber(selectedOrder?.totalAmount);
 
   const handleViewDetails = (order: Order) => {
     setSelectedOrder(order);
@@ -217,8 +241,8 @@ export default function Riwayat() {
     try {
       const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/payments/create`, {
         orderId: orderData.id,
-        amount: orderData.totalAmount,
-        customerName: orderData.customerName,
+        amount: toSafeNumber(orderData.totalAmount),
+        customerName: orderData.customerName || 'Pelanggan',
       });
 
       // @ts-ignore
@@ -259,7 +283,7 @@ export default function Riwayat() {
         <div className="flex flex-wrap gap-2">
           <span className="flex items-center gap-1.5 border-2 border-[#18181B] bg-[#FFFDF7] px-2.5 py-1.5 text-xs font-black shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[3px_3px_0px_#FFFDF7] dark:text-[#FFFDF7] animate-fade-in-up-delay-1">
             <ClipboardList className="w-3.5 h-3.5 text-[#18181B]/50 dark:text-[#FFFDF7]/50" />
-            {orders?.length ?? 0} transaksi
+            {safeOrders.length} transaksi
           </span>
           <span className="flex items-center gap-1.5 border-2 border-[#065F46] bg-[#065F46]/10 px-2.5 py-1.5 text-xs font-black text-[#065F46] shadow-[3px_3px_0px_#18181B] dark:border-[#34D399] dark:bg-[#065F46]/30 dark:text-[#34D399] dark:shadow-[3px_3px_0px_#FFFDF7] animate-fade-in-up-delay-2">
             {totalSelesai} selesai
@@ -346,7 +370,7 @@ export default function Riwayat() {
         {!isLoading && (filteredOrders?.length ?? 0) > 0 && (
           <div className="border-t-2 border-[#18181B] bg-[#E7D9B8] px-4 py-2 dark:border-[#FFFDF7] dark:bg-[#18181B]">
             <p className="text-xs font-bold text-[#18181B] dark:text-[#FFFDF7]">
-              Menampilkan {filteredOrders?.length} dari {orders?.length} transaksi
+              Menampilkan {filteredOrders.length} dari {safeOrders.length} transaksi
             </p>
           </div>
         )}
@@ -371,12 +395,12 @@ export default function Riwayat() {
               </div>
 
               <p className="text-[11px] font-mono font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 mb-4">
-                {selectedOrder.id}
+                {selectedOrder.id || '-'}
               </p>
 
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-4">
                 {[
-                  { label: 'Pelanggan', value: selectedOrder.customerName },
+                  { label: 'Pelanggan', value: selectedOrder.customerName || 'Pelanggan' },
                   {
                     label: 'Tipe',
                     value: selectedOrder.tableNumber
@@ -385,7 +409,7 @@ export default function Riwayat() {
                   },
                   {
                     label: 'Waktu',
-                    value: format(new Date(selectedOrder.createdAt), 'dd/MM/yyyy HH:mm'),
+                    value: formatSafeDate(selectedOrder.createdAt, 'dd/MM/yyyy HH:mm'),
                   },
                   {
                     label: 'Status',
@@ -414,33 +438,39 @@ export default function Riwayat() {
                   Item Pesanan
                 </p>
                 <div className="space-y-1.5 max-h-56 overflow-y-auto">
-                  {selectedOrder.items.map((item) => (
-                    <div key={item.id} className="flex items-center gap-3 border-2 border-[#18181B]/20 p-2 dark:border-[#FFFDF7]/10">
-                      <div className="w-8 h-8 border-2 border-[#18181B] bg-[#E7D9B8] overflow-hidden shrink-0 dark:border-[#FFFDF7]">
-                        <img
-                          src={item.menu.imageUrl || 'https://via.placeholder.com/80'}
-                          alt={item.menu.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-black text-[#18181B] dark:text-[#FFFDF7] truncate">{item.menu.name}</p>
-                        <p className="text-[11px] font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">
-                          {item.quantity}× Rp {item.price.toLocaleString('id-ID')}
+                  {selectedOrderItems.map((item, itemIndex) => {
+                    const itemName = item?.menu?.name || 'Menu';
+                    const itemQuantity = toSafeNumber(item?.quantity);
+                    const itemPrice = toSafeNumber(item?.price);
+
+                    return (
+                      <div key={item?.id || `${selectedOrder.id}-${itemIndex}`} className="flex items-center gap-3 border-2 border-[#18181B]/20 p-2 dark:border-[#FFFDF7]/10">
+                        <div className="w-8 h-8 border-2 border-[#18181B] bg-[#E7D9B8] overflow-hidden shrink-0 dark:border-[#FFFDF7]">
+                          <img
+                            src={item?.menu?.imageUrl || 'https://via.placeholder.com/80'}
+                            alt={itemName}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-black text-[#18181B] dark:text-[#FFFDF7] truncate">{itemName}</p>
+                          <p className="text-[11px] font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">
+                            {itemQuantity}× Rp {itemPrice.toLocaleString('id-ID')}
+                          </p>
+                        </div>
+                        <p className="text-sm font-black text-[#18181B] dark:text-[#FFFDF7] shrink-0">
+                          Rp {(itemQuantity * itemPrice).toLocaleString('id-ID')}
                         </p>
                       </div>
-                      <p className="text-sm font-black text-[#18181B] dark:text-[#FFFDF7] shrink-0">
-                        Rp {(item.quantity * item.price).toLocaleString('id-ID')}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
               <div className="flex justify-between items-center pt-4 mt-4 border-t-2 border-[#18181B] dark:border-[#FFFDF7]">
                 <span className="text-sm font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70">Total</span>
                 <span className="text-xl font-black text-[#7F1D1D] dark:text-[#C9A227] tabular-nums">
-                  Rp {selectedOrder.totalAmount.toLocaleString('id-ID')}
+                  Rp {selectedOrderTotalAmount.toLocaleString('id-ID')}
                 </span>
               </div>
 

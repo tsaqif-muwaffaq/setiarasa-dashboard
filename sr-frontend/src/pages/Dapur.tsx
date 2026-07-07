@@ -25,8 +25,8 @@ function NeoBadge({ children, className = '' }: { children: React.ReactNode; cla
 interface OrderItem {
   id: string;
   quantity: number;
-  menu: {
-    name: string;
+  menu?: {
+    name?: string;
   };
 }
 
@@ -48,7 +48,9 @@ interface Order {
 }
 
 function useElapsedMinutes(dateString: string) {
-  const diff = Math.floor((Date.now() - new Date(dateString).getTime()) / 60000);
+  const timestamp = new Date(dateString).getTime();
+  if (!Number.isFinite(timestamp)) return 0;
+  const diff = Math.floor((Date.now() - timestamp) / 60000);
   return diff;
 }
 
@@ -78,6 +80,7 @@ function OrderCard({
   index: number;
 }) {
   const isPendingVariant = variant === 'pending';
+  const orderItems = Array.isArray(order.items) ? order.items : [];
 
   return (
     <NeoCard className={`p-3 animate-fade-in-up-delay-${(index % 4) + 1}`}>
@@ -86,18 +89,18 @@ function OrderCard({
           <p className="font-black text-sm text-[#18181B] dark:text-[#FFFDF7] truncate">
             {order.tableNumber ? `Meja ${order.tableNumber}` : '🛍 Bawa Pulang'}
           </p>
-          <p className="text-xs font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 truncate mt-0.5">{order.customerName}</p>
+          <p className="text-xs font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 truncate mt-0.5">{order.customerName || 'Pelanggan'}</p>
         </div>
-        <ElapsedBadge createdAt={order.createdAt} />
+        <ElapsedBadge createdAt={order.createdAt || new Date().toISOString()} />
       </div>
 
       <ul className="space-y-0.5 mb-3">
-        {order.items.map((item) => (
-          <li key={item.id} className="flex items-baseline gap-2 text-sm">
+        {orderItems.map((item, itemIndex) => (
+          <li key={item.id || `${order.id}-${itemIndex}`} className="flex items-baseline gap-2 text-sm">
             <span className={`font-black text-xs w-6 text-right ${isPendingVariant ? 'text-[#C9A227]' : 'text-[#065F46]'}`}>
-              {item.quantity}×
+              {item.quantity ?? 0}×
             </span>
-            <span className="font-bold text-[#18181B] dark:text-[#FFFDF7]">{item.menu.name}</span>
+            <span className="font-bold text-[#18181B] dark:text-[#FFFDF7]">{item.menu?.name ?? 'Menu'}</span>
           </li>
         ))}
       </ul>
@@ -157,15 +160,23 @@ export default function Dapur() {
   const { data: orders, isLoading } = useQuery<Order[]>({
     queryKey: ['activeOrders'],
     queryFn: async () => {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders/active`, axiosConfig);
-      return res.data.data;
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders/active`, axiosConfig);
+        return Array.isArray(res.data?.data) ? res.data.data : [];
+      } catch (error) {
+        console.error('Gagal memuat pesanan aktif dapur:', error);
+        return [];
+      }
     },
     refetchInterval: 5000,
   });
 
   // ── Deteksi Pesanan Baru ──
-  const pendingOrders = orders?.filter((o) => o.status === 'PAID') || [];
-  const cookingOrders = orders?.filter((o) => o.status === 'COOKING') || [];
+  const safeOrders = Array.isArray(orders)
+    ? orders.filter((order): order is Order => Boolean(order && typeof order === 'object'))
+    : [];
+  const pendingOrders = safeOrders.filter((o) => o?.status === 'PAID');
+  const cookingOrders = safeOrders.filter((o) => o?.status === 'COOKING');
 
   useEffect(() => {
     if (pendingOrders.length > prevOrderCount) {
