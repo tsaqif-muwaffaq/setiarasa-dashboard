@@ -37,6 +37,23 @@ interface DashboardStats {
 
 type SalesPeriod = 'daily' | 'weekly' | 'monthly';
 
+const emptyPaymentBreakdown: PaymentBreakdown = {
+  CASH: 0,
+  QRIS: 0,
+  GOPAY: 0,
+  SHOPEEPAY: 0,
+  BANK_TRANSFER: 0,
+  DEBIT: 0,
+};
+
+const emptyDashboardStats: DashboardStats = {
+  totalRevenue: 0,
+  orderCount: 0,
+  paymentBreakdown: emptyPaymentBreakdown,
+  weeklyRevenue: [],
+  topMenus: [],
+};
+
 // ── Komponen Neubrutalism ──
 function NeoCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
@@ -60,10 +77,26 @@ export default function Dashboard() {
   const { data: stats, isLoading } = useQuery<DashboardStats>({
     queryKey: ['dashboardStats'],
     queryFn: async () => {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return res.data.data;
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders/stats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = res.data?.data;
+        if (!data || typeof data !== 'object') return emptyDashboardStats;
+        return {
+          ...data,
+          totalRevenue: data.totalRevenue ?? 0,
+          orderCount: data.orderCount ?? 0,
+          paymentBreakdown: data.paymentBreakdown ?? emptyPaymentBreakdown,
+          weeklyRevenue: Array.isArray(data.weeklyRevenue) ? data.weeklyRevenue : [],
+          topMenus: Array.isArray(data.topMenus) ? data.topMenus : [],
+        };
+      } catch (error) {
+        console.error('Gagal memuat statistik dashboard:', error);
+        return emptyDashboardStats;
+      } finally {
+        // React Query clears isLoading when this async query settles.
+      }
     },
     refetchInterval: 10000,
   });
@@ -73,11 +106,18 @@ export default function Dashboard() {
   const { data: salesTrend, isLoading: isSalesTrendLoading } = useQuery<WeeklyRevenue[]>({
     queryKey: ['salesTrend', salesPeriod],
     queryFn: async () => {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders/sales-trend`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { period: salesPeriod },
-      });
-      return res.data.data;
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders/sales-trend`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { period: salesPeriod },
+        });
+        return Array.isArray(res.data?.data) ? res.data.data : [];
+      } catch (error) {
+        console.error('Gagal memuat tren penjualan:', error);
+        return [];
+      } finally {
+        // React Query clears isLoading when this async query settles.
+      }
     },
     refetchInterval: 10000,
   });
@@ -86,11 +126,11 @@ export default function Dashboard() {
   const orderCount = stats?.orderCount || 0;
   const averageOrderValue = orderCount > 0 ? totalRevenue / orderCount : 0;
 
-  const weeklyData = stats?.weeklyRevenue || [];
-  const topMenus = stats?.topMenus || [];
-  const breakdown = stats?.paymentBreakdown || { CASH: 0, QRIS: 0, GOPAY: 0, SHOPEEPAY: 0, BANK_TRANSFER: 0, DEBIT: 0 };
+  const weeklyData = Array.isArray(stats?.weeklyRevenue) ? stats.weeklyRevenue : [];
+  const topMenus = Array.isArray(stats?.topMenus) ? stats.topMenus : [];
+  const breakdown = stats?.paymentBreakdown || emptyPaymentBreakdown;
 
-  const salesTrendData = salesTrend || [];
+  const salesTrendData = Array.isArray(salesTrend) ? salesTrend : [];
 
   const periodOptions: { value: SalesPeriod; label: string }[] = [
     { value: 'daily', label: 'Hari ini' },
@@ -172,7 +212,7 @@ export default function Dashboard() {
 
       {/* ===== METRIC CARDS ===== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {metricCards.map(({ title, value, sub, icon: Icon }, index) => (
+        {metricCards?.map(({ title, value, sub, icon: Icon }, index) => (
           <div 
             key={title} 
             className={`animate-fade-in-up-delay-${(index % 4) + 1}`}
@@ -205,7 +245,7 @@ export default function Dashboard() {
           📊 Rincian Kas Masuk
         </p>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {paymentMethods.map(({ label, key, icon: Icon }) => (
+          {paymentMethods?.map(({ label, key, icon: Icon }) => (
             <NeoCard key={key} className="p-3 text-center hover:shadow-[8px_8px_0px_#18181B] dark:hover:shadow-[8px_8px_0px_#FFFDF7] transition-all duration-200 hover-scale-bounce">
               <div className="flex flex-col items-center">
                 <div className="flex h-10 w-10 items-center justify-center border-2 border-[#18181B] bg-[#C9A227] shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7]">
@@ -246,7 +286,7 @@ export default function Dashboard() {
             {isLoading ? (
               <div className="w-full h-full flex items-center justify-center gap-2 text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#7F1D1D] border-t-transparent dark:border-[#C9A227] dark:border-t-transparent" />
-                Memuat grafik...
+                Memuat data dari server...
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
@@ -345,7 +385,7 @@ export default function Dashboard() {
             {isLoading ? (
               <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 py-10">
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#7F1D1D] border-t-transparent dark:border-[#C9A227] dark:border-t-transparent" />
-                Memuat data...
+                Memuat data dari server...
               </div>
             ) : topMenus.length === 0 ? (
               <div className="text-center py-10">
@@ -355,7 +395,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-2">
-                {topMenus.map((menu, index) => (
+                {topMenus?.map((menu, index) => (
                   <div 
                     key={menu.id} 
                     className="flex items-center justify-between border-2 border-[#18181B]/20 p-3 dark:border-[#FFFDF7]/10 hover:border-[#C9A227]/50 dark:hover:border-[#C9A227]/30 transition-all duration-200 hover-scale-bounce"
@@ -407,7 +447,7 @@ export default function Dashboard() {
           </div>
 
           <div className="flex gap-1 border-2 border-[#18181B] p-1 dark:border-[#FFFDF7]">
-            {periodOptions.map((opt) => (
+            {periodOptions?.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
@@ -428,7 +468,7 @@ export default function Dashboard() {
           {isSalesTrendLoading ? (
             <div className="w-full h-full flex items-center justify-center gap-2 text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#7F1D1D] border-t-transparent dark:border-[#C9A227] dark:border-t-transparent" />
-              Memuat grafik...
+              Memuat data dari server...
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">

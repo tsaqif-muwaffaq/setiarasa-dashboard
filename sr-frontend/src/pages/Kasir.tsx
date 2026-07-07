@@ -147,29 +147,43 @@ export default function Kasir() {
   const { data: menus, isLoading } = useQuery<Menu[]>({
     queryKey: ['menus'],
     queryFn: async () => {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/menu`, axiosConfig);
-      return res.data.data;
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/menu`, axiosConfig);
+        return Array.isArray(res.data?.data) ? res.data.data : [];
+      } catch (error) {
+        console.error('Gagal memuat menu kasir:', error);
+        return [];
+      } finally {
+        // React Query clears isLoading when this async query settles.
+      }
     },
   });
 
   const { data: incomingOrders, isLoading: isLoadingIncoming } = useQuery<IncomingOrder[]>({
     queryKey: ['pendingActionOrders'],
     queryFn: async () => {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders/pending-actions`, axiosConfig);
-      return res.data.data;
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders/pending-actions`, axiosConfig);
+        return Array.isArray(res.data?.data) ? res.data.data : [];
+      } catch (error) {
+        console.error('Gagal memuat pesanan masuk:', error);
+        return [];
+      } finally {
+        // React Query clears isLoading when this async query settles.
+      }
     },
     refetchInterval: 15000,
   });
 
   const normalizedMenuSearch = menuSearchTerm.trim().toLowerCase();
   const filteredMenus = useMemo(() => {
-    if (!menus) return [];
+    if (!Array.isArray(menus)) return [];
     if (!normalizedMenuSearch) return menus;
     return menus.filter((menu) => menu.name.toLowerCase().includes(normalizedMenuSearch));
   }, [menus, normalizedMenuSearch]);
 
   const actionableOrders = useMemo(() => {
-    if (!incomingOrders) return [];
+    if (!Array.isArray(incomingOrders)) return [];
     return incomingOrders.filter((o) => ACTIONABLE_STATUSES.includes(o.status));
   }, [incomingOrders]);
 
@@ -211,10 +225,10 @@ export default function Kasir() {
             customerName: order.customerName,
             tableNumber: order.tableNumber,
             totalAmount: order.totalAmount,
-            items: variables.items.map((vItem) => {
+            items: variables.items?.map((vItem) => {
               const originalCartItem = cart.find((c) => c.menuId === vItem.menuId);
               return { ...vItem, name: originalCartItem ? originalCartItem.name : 'Menu' };
-            }),
+            }) ?? [],
           });
 
           setCart([]);
@@ -315,9 +329,9 @@ export default function Kasir() {
           toast.error(`Stok maksimal ${menu.name} adalah ${menu.stock}`);
           return prev;
         }
-        return prev.map((item) =>
+        return prev?.map((item) =>
           item.menuId === menu.id ? { ...item, quantity: item.quantity + 1 } : item
-        );
+        ) ?? prev;
       }
       return [...prev, { menuId: menu.id, name: menu.name, price: menu.price, quantity: 1 }];
     });
@@ -329,13 +343,13 @@ export default function Kasir() {
 
   const updateQuantity = (menuId: string, delta: number) => {
     setCart((prev) =>
-      prev.map((item) => {
+      prev?.map((item) => {
         if (item.menuId === menuId) {
           const newQty = item.quantity + delta;
           return newQty > 0 ? { ...item, quantity: newQty } : item;
         }
         return item;
-      })
+      }) ?? prev
     );
   };
 
@@ -355,11 +369,11 @@ export default function Kasir() {
       customerName: customerName || 'Pelanggan Umum',
       tableNumber: orderType === 'takeaway' ? null : tableNumber,
       paymentMethod: paymentType === 'CASH' ? 'CASH' : 'QRIS',
-      items: cart.map((item) => ({
+      items: cart?.map((item) => ({
         menuId: item.menuId,
         quantity: item.quantity,
         price: item.price,
-      })),
+      })) ?? [],
     };
     checkoutMutation.mutate(payload);
   };
@@ -372,8 +386,9 @@ export default function Kasir() {
     const printWindow = window.open('', '_blank', 'width=300,height=600');
     if (!printWindow) return;
 
-    const itemsHtml = orderData.items
-      .map(
+    const receiptItems = Array.isArray(orderData?.items) ? orderData.items : [];
+    const itemsHtml = receiptItems
+      ?.map(
         (item: any) => `
     <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 3px;">
       <span>${item.quantity}x ${item.name || item.menu?.name}</span>
@@ -543,7 +558,7 @@ const CartPanel = () => (
           <p className="text-xs font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 text-center">Pilih menu di sebelah kiri</p>
         </div>
       ) : (
-        cart.map((item) => (
+        cart?.map((item) => (
           <div
             key={item.menuId}
             className="flex items-center gap-3 border-2 border-[#18181B]/20 p-2 hover:bg-[#C9A227]/10 dark:border-[#FFFDF7]/10 dark:hover:bg-[#C9A227]/20 transition-colors card-hover-frame"
@@ -681,14 +696,14 @@ const CartPanel = () => (
         {isLoadingIncoming ? (
           <div className="text-center text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 py-10 flex items-center justify-center gap-2">
             <span className="w-4 h-4 border-2 border-[#7F1D1D] border-t-transparent rounded-full animate-spin dark:border-[#C9A227] dark:border-t-transparent" />
-            Memuat...
+            Memuat data dari server...
           </div>
-        ) : filteredIncomingOrders.length === 0 ? (
+        ) : filteredIncomingOrders?.length === 0 ? (
           <div className="text-center text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 py-10">
-            Tidak ada pesanan yang perlu diproses.
+            Belum ada pesanan.
           </div>
         ) : (
-          filteredIncomingOrders.map((order, index) => (
+          filteredIncomingOrders?.map((order, index) => (
             <NeoCard 
               key={order.id} 
               className={`p-4 animate-fade-in-up-delay-${(index % 4) + 1}`}
@@ -710,7 +725,7 @@ const CartPanel = () => (
               </div>
 
               <div className="text-xs font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 mb-2">
-                {order.items.map((i) => `${i.quantity}x ${i.menu.name}`).join(', ')}
+                {order.items?.map((i) => `${i.quantity}x ${i.menu?.name ?? 'Menu'}`).join(', ') || 'Belum ada item'}
               </div>
 
               <div className="flex items-center justify-between mb-3">
@@ -832,20 +847,20 @@ const CartPanel = () => (
                   {isLoading ? (
                     <div className="h-full flex items-center justify-center text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">
                       <span className="w-4 h-4 border-2 border-[#7F1D1D] border-t-transparent rounded-full animate-spin mr-2 dark:border-[#C9A227] dark:border-t-transparent" />
-                      Memuat menu...
+                      Memuat data dari server...
                     </div>
-                  ) : menus?.length === 0 ? (
+                  ) : !menus?.length ? (
                     <div className="h-full flex items-center justify-center text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">
                       Belum ada menu tersedia.
                     </div>
-                  ) : filteredMenus.length === 0 ? (
+                  ) : filteredMenus?.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center gap-2 text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">
                       <Search className="w-8 h-8 text-[#C9A227]/70" />
                       <p>Menu tidak ditemukan</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {filteredMenus.map((menu, index) => (
+                      {filteredMenus?.map((menu, index) => (
                         <div
                           key={menu.id}
                           className={`border-4 border-[#18181B] bg-[#FFFDF7] shadow-[4px_4px_0px_#18181B] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[8px_8px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[4px_4px_0px_#FFFDF7] dark:hover:shadow-[8px_8px_0px_#FFFDF7] animate-fade-in-up-delay-${(index % 4) + 1} ${
