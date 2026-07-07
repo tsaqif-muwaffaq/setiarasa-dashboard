@@ -80,7 +80,7 @@ export const handleMidtransNotification = async (req: Request, res: Response): P
     }
 
     const orderId = notification.order_id;
-    const transactionStatus = notification.transaction_status;
+    const transactionStatus = String(notification.transaction_status || '').toLowerCase();
     const fraudStatus = notification.fraud_status;
     const paymentType = notification.payment_type;
 
@@ -105,9 +105,6 @@ export const handleMidtransNotification = async (req: Request, res: Response): P
       updateStatus = 'EXPIRED';
     }
 
-    // GANTI BLOK UPDATE PRISMA DI PAYMENT.CONTROLLER.TS LU DENGAN INI:
-
-// 👇 GANTI BLOK UPDATE PRISMA YANG LAMA DENGAN INI (AUTO-RESTOCK)
     if (updateStatus !== 'PENDING_PAYMENT') {
       
       // 1. Ambil data pesanan saat ini beserta item-nya SEBELUM di-update
@@ -147,9 +144,8 @@ export const handleMidtransNotification = async (req: Request, res: Response): P
         console.log(`[Webhook] Stok untuk pesanan ${orderId} berhasil dikembalikan!`);
       }
     }
-    // 👆 SAMPAI SINI. Bawahnya biarin res.status(200).json(...)
 
-    res.status(200).json({ success: true, message: 'Webhook handled successfully' });
+    res.status(200).send('OK');
   } catch (error) {
     console.error('Webhook Error Notification:', error);
     res.status(500).json({ success: false, message: 'Internal Server Error Webhook' });
