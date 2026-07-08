@@ -1,10 +1,12 @@
 import { useState, useRef } from 'react';
 import axios from 'axios';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useGlobalLoading } from '@/components/GlobalLoadingProvider';
 import { User, Mail, Lock, Save, AlertCircle, Camera, Phone, BellRing, BellOff, ShieldCheck, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Profile() {
+  const { showLoading, hideLoading } = useGlobalLoading();
   const { user, token, setAuth } = useAuthStore();
   
   const [name, setName] = useState(user?.name || '');
@@ -49,6 +51,7 @@ export default function Profile() {
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    showLoading('Menyimpan perubahan profil...');
     setIsLoading(true);
 
     try {
@@ -93,6 +96,7 @@ export default function Profile() {
       toast.dismiss('upload-toast');
       toast.error(error.response?.data?.message || 'Gagal memperbarui profil.');
     } finally {
+      hideLoading();
       setIsLoading(false);
     }
   };

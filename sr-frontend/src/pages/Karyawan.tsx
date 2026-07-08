@@ -2,6 +2,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useGlobalLoading } from '@/components/GlobalLoadingProvider';
 import { toast } from 'sonner';
 import { UserPlus, Trash2, Search, Shield, ChefHat, Store, Users, X } from 'lucide-react';
 import { format } from 'date-fns';
@@ -62,6 +63,7 @@ function NeoBadge({ children, className = '' }: { children: React.ReactNode; cla
 }
 
 export default function Karyawan() {
+  const { showLoading, hideLoading } = useGlobalLoading();
   const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
 
@@ -76,18 +78,28 @@ export default function Karyawan() {
 
   const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
 
-  const { data: employees, isLoading } = useQuery<KaryawanData[]>({
-    queryKey: ['employees'],
-    queryFn: async () => {
-      try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/users`, axiosConfig);
-        return Array.isArray(res.data?.data) ? res.data.data : [];
-      } catch (error) {
-        console.error('Gagal memuat data karyawan:', error);
-        return [];
+const { data: employees, isLoading } = useQuery<KaryawanData[]>({
+  queryKey: ['employees'],
+  queryFn: async () => {
+    const isFirstLoad = !queryClient.getQueryData(['employees']);
+    if (isFirstLoad) {
+      showLoading('Memuat data karyawan...');
+    }
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/users`, axiosConfig);
+      return Array.isArray(res.data?.data) ? res.data.data : [];
+    } catch (error) {
+      console.error('Gagal memuat data karyawan:', error);
+      return [];
+    } finally {
+      if (!queryClient.getQueryData(['employees'])) {
+        setTimeout(() => hideLoading(), 300);
       }
-    },
-  });
+    }
+  },
+  refetchOnWindowFocus: false,
+  staleTime: 30000,
+});
 
   const createEmployeeMutation = useMutation({
     mutationFn: async (payload: typeof formData) =>

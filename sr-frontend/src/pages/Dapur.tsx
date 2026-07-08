@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useGlobalLoading } from '@/components/GlobalLoadingProvider';
 import { toast } from 'sonner';
 import { ChefHat, Clock, CheckCircle2, Utensils, Flame, Wifi, Bell, BellOff } from 'lucide-react';
 
@@ -127,6 +128,7 @@ function OrderCard({
 }
 
 export default function Dapur() {
+  const { showLoading, hideLoading } = useGlobalLoading();
   const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
 
@@ -157,19 +159,29 @@ export default function Dapur() {
     headers: { Authorization: `Bearer ${token}` },
   };
 
-  const { data: orders, isLoading } = useQuery<Order[]>({
-    queryKey: ['activeOrders'],
-    queryFn: async () => {
-      try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders/active`, axiosConfig);
-        return Array.isArray(res.data?.data) ? res.data.data : [];
-      } catch (error) {
-        console.error('Gagal memuat pesanan aktif dapur:', error);
-        return [];
+const { data: orders, isLoading } = useQuery<Order[]>({
+  queryKey: ['activeOrders'],
+  queryFn: async () => {
+    const isFirstLoad = !queryClient.getQueryData(['activeOrders']);
+    if (isFirstLoad) {
+      showLoading('Memuat pesanan aktif...');
+    }
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders/active`, axiosConfig);
+      return Array.isArray(res.data?.data) ? res.data.data : [];
+    } catch (error) {
+      console.error('Gagal memuat pesanan aktif dapur:', error);
+      return [];
+    } finally {
+      if (!queryClient.getQueryData(['activeOrders'])) {
+        setTimeout(() => hideLoading(), 300);
       }
-    },
-    refetchInterval: 5000,
-  });
+    }
+  },
+  refetchInterval: 5000,
+  refetchOnWindowFocus: false,
+  staleTime: 10000,
+});
 
   // ── Deteksi Pesanan Baru ──
   const safeOrders = Array.isArray(orders)

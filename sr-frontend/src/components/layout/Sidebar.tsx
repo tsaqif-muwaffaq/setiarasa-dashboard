@@ -25,8 +25,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { name: 'Kasir (POS)', path: '/kasir', icon: ShoppingCart, roles: ['OWNER', 'KASIR'] },
     { name: 'Dapur (KDS)', path: '/dapur', icon: ChefHat, roles: ['OWNER', 'DAPUR'] },
     { name: 'Kelola Menu', path: '/menu', icon: UtensilsCrossed, roles: ['OWNER'] },
-    { name: 'Riwayat Transaksi', path: '/riwayat', icon: History, roles: ['OWNER', 'KASIR'] },
     { name: 'Kelola Karyawan', path: '/karyawan', icon: Users, roles: ['OWNER'] },
+    { name: 'Riwayat Transaksi', path: '/riwayat', icon: History, roles: ['OWNER', 'KASIR'] },
     { name: 'Profil Saya', path: '/profil', icon: UserCog, roles: ['OWNER', 'KASIR', 'DAPUR'] },
   ];
 

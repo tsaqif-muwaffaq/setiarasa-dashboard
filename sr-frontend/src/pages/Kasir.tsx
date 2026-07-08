@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useGlobalLoading } from '@/components/GlobalLoadingProvider';
 import { toast } from 'sonner';
 import {
   Search,
@@ -20,7 +21,6 @@ import {
   Clock,
 } from 'lucide-react';
 
-// ── Komponen Neubrutalism ──
 function NeoCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={`border-4 border-[#18181B] bg-[#FFFDF7] shadow-[6px_6px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[6px_6px_0px_#FFFDF7] card-lift-premium ${className}`}>
@@ -46,7 +46,6 @@ function NeoBadge({ children, className = '' }: { children: React.ReactNode; cla
   );
 }
 
-// --- Tipe Data ---
 interface Menu {
   id: string;
   name: string;
@@ -109,10 +108,10 @@ const toSafeNumber = (value: unknown) => {
 };
 
 export default function Kasir() {
-  const token = useAuthStore((state) => state.token);
+  const { showLoading, hideLoading } = useGlobalLoading();
   const queryClient = useQueryClient();
+  const token = useAuthStore((state) => state.token);
 
-  // ── State: Notifikasi Suara ──
   const [audio] = useState(() => {
     if (typeof window !== 'undefined') {
       return new Audio('/notif-kasir.mp3');
@@ -127,7 +126,6 @@ export default function Kasir() {
     }
   };
 
-  // ── State: POS ──
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerName, setCustomerName] = useState('');
   const [tableNumber, setTableNumber] = useState('');
@@ -135,8 +133,6 @@ export default function Kasir() {
   const [menuSearchTerm, setMenuSearchTerm] = useState('');
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const [paymentType, setPaymentType] = useState<'CASH' | 'MIDTRANS'>('CASH');
-
-  // ── State: Tab ──
   const [activeTab, setActiveTab] = useState<'pos' | 'incoming'>('pos');
   const [incomingSearch, setIncomingSearch] = useState('');
   const [prevOrderCount, setPrevOrderCount] = useState(0);
@@ -145,13 +141,13 @@ export default function Kasir() {
     headers: { Authorization: `Bearer ${token}` },
   };
 
-  // ============================================================
-  // QUERIES
-  // ============================================================
-
   const { data: menus, isLoading } = useQuery<Menu[]>({
     queryKey: ['menus'],
     queryFn: async () => {
+      const isFirstLoad = !queryClient.getQueryData(['menus']);
+      if (isFirstLoad) {
+        showLoading('Memuat daftar menu...');
+      }
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/menu`, axiosConfig);
         return Array.isArray(res.data?.data) ? res.data.data : [];
@@ -159,14 +155,23 @@ export default function Kasir() {
         console.error('Gagal memuat menu kasir:', error);
         return [];
       } finally {
-        // React Query clears isLoading when this async query settles.
+        if (!queryClient.getQueryData(['menus'])) {
+          setTimeout(() => hideLoading(), 300);
+        }
       }
     },
+    refetchInterval: 30000,
+    refetchOnWindowFocus: false,
+    staleTime: 20000,
   });
 
   const { data: incomingOrders, isLoading: isLoadingIncoming } = useQuery<IncomingOrder[]>({
     queryKey: ['pendingActionOrders'],
     queryFn: async () => {
+      const isFirstLoad = !queryClient.getQueryData(['pendingActionOrders']);
+      if (isFirstLoad) {
+        showLoading('Memuat pesanan masuk...');
+      }
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders/pending-actions`, axiosConfig);
         return Array.isArray(res.data?.data) ? res.data.data : [];
@@ -174,10 +179,14 @@ export default function Kasir() {
         console.error('Gagal memuat pesanan masuk:', error);
         return [];
       } finally {
-        // React Query clears isLoading when this async query settles.
+        if (!queryClient.getQueryData(['pendingActionOrders'])) {
+          setTimeout(() => hideLoading(), 300);
+        }
       }
     },
     refetchInterval: 15000,
+    refetchOnWindowFocus: false,
+    staleTime: 10000,
   });
 
   const normalizedMenuSearch = menuSearchTerm.trim().toLowerCase();
@@ -197,7 +206,7 @@ export default function Kasir() {
       playNotif();
     }
     setPrevOrderCount(actionableOrders.length);
-  }, [actionableOrders.length]);
+  }, [actionableOrders.length, playNotif, prevOrderCount]);
 
   const normalizedIncomingSearch = incomingSearch.trim().toLowerCase();
   const filteredIncomingOrders = useMemo(() => {
@@ -209,10 +218,6 @@ export default function Kasir() {
     );
   }, [actionableOrders, normalizedIncomingSearch]);
 
-  // ============================================================
-  // MUTATIONS
-  // ============================================================
-
   const checkoutMutation = useMutation({
     mutationFn: async (payload: CheckoutPayload) => {
       const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders`, payload, axiosConfig);
@@ -220,11 +225,9 @@ export default function Kasir() {
     },
     onSuccess: async (data, variables) => {
       const order = data?.data || {};
-
       try {
         if (variables.paymentMethod === 'CASH') {
           toast.success('✅ Pembayaran Tunai berhasil!');
-
           handlePrintReceipt({
             id: order.id,
             customerName: order.customerName,
@@ -235,7 +238,6 @@ export default function Kasir() {
               return { ...vItem, name: originalCartItem ? originalCartItem.name : 'Menu' };
             }) ?? [],
           });
-
           setCart([]);
           setCustomerName('');
           setTableNumber('');
@@ -318,10 +320,6 @@ export default function Kasir() {
     onError: () => toast.error('❌ Gagal menerima pesanan.'),
   });
 
-  // ============================================================
-  // HANDLERS
-  // ============================================================
-
   const addToCart = (menu: Menu) => {
     if (!menu?.id) {
       toast.error('Data menu tidak valid.');
@@ -392,10 +390,6 @@ export default function Kasir() {
     checkoutMutation.mutate(payload);
   };
 
-  // ============================================================
-  // CETAK STRUK (Neubrutalism style)
-  // ============================================================
-
   const handlePrintReceipt = (orderData: any) => {
     const printWindow = window.open('', '_blank', 'width=300,height=600');
     if (!printWindow) return;
@@ -439,9 +433,7 @@ export default function Kasir() {
       <body>
         <div class="center">
           <img src="${window.location.origin}/logo.png" alt="Logo Setia Rasa" class="logo-struk" />
-          
           <h2 style="margin: 2px 0 0 0; font-size: 18px; font-weight: bold;">RM SETIA RASA</h2>
-          
           <p style="font-size: 10px; margin: 4px 0; line-height: 1.3;">
             Perum. Taman Batu Aji Indah 2, Blok N No. 28<br>
             Jl. Brigjen Katamso, Sagulung Kota<br>
@@ -449,22 +441,17 @@ export default function Kasir() {
             Kepulauan Riau 29444
           </p>
         </div>
-        
         <div class="line"></div>
         <div style="font-size: 12px; margin-bottom: 3px;">Tgl  : ${new Date().toLocaleString('id-ID')}</div>
         <div style="font-size: 12px; margin-bottom: 3px;">Pel  : ${orderData.customerName || 'Pelanggan'}</div>
-        
         ${orderTypeHtml}
-        
         <div class="line"></div>
         ${itemsHtml}
         <div class="line"></div>
-        
         <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px;">
           <span>TOTAL:</span>
           <span>Rp ${toSafeNumber(orderData?.totalAmount).toLocaleString('id-ID')}</span>
         </div>
-        
         <div class="line"></div>
         <div class="center" style="font-size: 11px; margin-top: 15px;">
           Terima Kasih Atas Kunjungan Anda!<br>"Setia Karena Rasa"
@@ -480,212 +467,198 @@ export default function Kasir() {
     printWindow.document.close();
   };
 
-// ── Panel: KERANJANG (POS) ──
-const CartPanel = () => (
-  <div className="flex flex-col h-full min-h-0 overflow-hidden bg-[#FFFDF7] dark:bg-[#18181B]">
-    {/* Header Keranjang - tetap sama */}
-    <div className="border-b-4 border-[#18181B] bg-[#7F1D1D] px-4 py-3 flex items-center justify-between shrink-0 dark:border-[#FFFDF7]">
-      <div className="flex items-center gap-2">
-        <ShoppingCart className="w-4 h-4 text-[#FFFDF7]" />
-        <h2 className="text-base font-black text-[#FFFDF7]">Keranjang</h2>
-      </div>
-      <div className="flex items-center gap-2">
-        {totalItems > 0 && (
-          <NeoBadge className="border-[#18181B] bg-[#C9A227] text-[#18181B] shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7]">
-            {totalItems} item
-          </NeoBadge>
-        )}
-        <button
-          className="lg:hidden border-2 border-[#FFFDF7] p-1 transition-all hover:bg-[#FFFDF7]/20 dark:border-[#FFFDF7]"
-          onClick={() => setCartDrawerOpen(false)}
-        >
-          <X className="w-4 h-4 text-[#FFFDF7]" />
-        </button>
-      </div>
-    </div>
-
-    {/* Order Type & Form - tetap sama */}
-    <div className="border-b-4 border-[#18181B] p-4 space-y-3 bg-[#E7D9B8] dark:border-[#FFFDF7] dark:bg-[#18181B] shrink-0">
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => setOrderType('dine-in')}
-          className={`border-2 border-[#18181B] py-2 text-sm font-black shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[5px_5px_0px_#FFFDF7] ${
-            orderType === 'dine-in'
-              ? 'bg-[#7F1D1D] text-[#FFFDF7]'
-              : 'bg-[#FFFDF7] text-[#18181B] dark:bg-[#18181B] dark:text-[#FFFDF7]'
-          } hover-scale-bounce`}
-        >
-          <Store className="w-4 h-4 inline mr-1" />
-          Di Tempat
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setOrderType('takeaway');
-            setTableNumber('');
-          }}
-          className={`border-2 border-[#18181B] py-2 text-sm font-black shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[5px_5px_0px_#FFFDF7] ${
-            orderType === 'takeaway'
-              ? 'bg-[#7F1D1D] text-[#FFFDF7]'
-              : 'bg-[#FFFDF7] text-[#18181B] dark:bg-[#18181B] dark:text-[#FFFDF7]'
-          } hover-scale-bounce`}
-        >
-          <ShoppingBag className="w-4 h-4 inline mr-1" />
-          Bungkus
-        </button>
+  const CartPanel = () => (
+    <div className="flex flex-col h-full min-h-0 overflow-hidden bg-[#FFFDF7] dark:bg-[#18181B]">
+      <div className="border-b-4 border-[#18181B] bg-[#7F1D1D] px-4 py-3 flex items-center justify-between shrink-0 dark:border-[#FFFDF7]">
+        <div className="flex items-center gap-2">
+          <ShoppingCart className="w-4 h-4 text-[#FFFDF7]" />
+          <h2 className="text-base font-black text-[#FFFDF7]">Keranjang</h2>
+        </div>
+        <div className="flex items-center gap-2">
+          {totalItems > 0 && (
+            <NeoBadge className="border-[#18181B] bg-[#C9A227] text-[#18181B] shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7]">
+              {totalItems} item
+            </NeoBadge>
+          )}
+          <button
+            className="lg:hidden border-2 border-[#FFFDF7] p-1 transition-all hover:bg-[#FFFDF7]/20 dark:border-[#FFFDF7]"
+            onClick={() => setCartDrawerOpen(false)}
+          >
+            <X className="w-4 h-4 text-[#FFFDF7]" />
+          </button>
+        </div>
       </div>
 
-      <div className="space-y-1 animate-slide-left-1">
-        <label className="text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7]">
-          Nama Pelanggan <span className="font-normal normal-case">(Opsional)</span>
-        </label>
-        <NeoInput
-          placeholder="Contoh: Budi"
-          value={customerName}
-          onChange={(e) => setCustomerName(e.target.value)}
-          className="w-full"
-        />
-      </div>
+      <div className="border-b-4 border-[#18181B] p-4 space-y-3 bg-[#E7D9B8] dark:border-[#FFFDF7] dark:bg-[#18181B] shrink-0">
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setOrderType('dine-in')}
+            className={`border-2 border-[#18181B] py-2 text-sm font-black shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[5px_5px_0px_#FFFDF7] ${
+              orderType === 'dine-in'
+                ? 'bg-[#7F1D1D] text-[#FFFDF7]'
+                : 'bg-[#FFFDF7] text-[#18181B] dark:bg-[#18181B] dark:text-[#FFFDF7]'
+            } hover-scale-bounce`}
+          >
+            <Store className="w-4 h-4 inline mr-1" />
+            Di Tempat
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setOrderType('takeaway');
+              setTableNumber('');
+            }}
+            className={`border-2 border-[#18181B] py-2 text-sm font-black shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[5px_5px_0px_#FFFDF7] ${
+              orderType === 'takeaway'
+                ? 'bg-[#7F1D1D] text-[#FFFDF7]'
+                : 'bg-[#FFFDF7] text-[#18181B] dark:bg-[#18181B] dark:text-[#FFFDF7]'
+            } hover-scale-bounce`}
+          >
+            <ShoppingBag className="w-4 h-4 inline mr-1" />
+            Bungkus
+          </button>
+        </div>
 
-      {orderType === 'dine-in' && (
-        <div className="space-y-1 animate-in fade-in zoom-in-95 duration-200">
+        <div className="space-y-1 animate-slide-left-1">
           <label className="text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7]">
-            Nomor Meja <span className="text-[#7F1D1D]">*</span>
+            Nama Pelanggan <span className="font-normal normal-case">(Opsional)</span>
           </label>
           <NeoInput
-            placeholder="Contoh: Meja 5"
-            value={tableNumber}
-            onChange={(e) => setTableNumber(e.target.value)}
+            placeholder="Contoh: Budi"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
             className="w-full"
           />
         </div>
-      )}
-    </div>
 
-    {/* Cart Items - MODIFIED: Tombol hapus selalu terlihat */}
-    <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-1">
-      {cart.length === 0 ? (
-        <div className="h-full flex flex-col items-center justify-center gap-3 opacity-50">
-          <ShoppingCart className="w-10 h-10 text-[#18181B]/50 dark:text-[#FFFDF7]/50" />
-          <p className="text-sm font-black text-[#18181B]/50 dark:text-[#FFFDF7]/50">Keranjang masih kosong</p>
-          <p className="text-xs font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 text-center">Pilih menu di sebelah kiri</p>
-        </div>
-      ) : (
-        cart.map((item) => {
-          const itemPrice = toSafeNumber(item?.price);
-          const itemQuantity = toSafeNumber(item?.quantity);
-
-          return (
-            <div
-              key={item.menuId}
-              className="flex items-center gap-3 border-2 border-[#18181B]/20 p-2 hover:bg-[#C9A227]/10 dark:border-[#FFFDF7]/10 dark:hover:bg-[#C9A227]/20 transition-colors card-hover-frame"
-            >
-              <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-black text-[#18181B] dark:text-[#FFFDF7] line-clamp-1">{item?.name || 'Menu'}</h4>
-                <p className="text-xs font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70">
-                  Rp {itemPrice.toLocaleString('id-ID')}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-1 border-2 border-[#18181B] p-0.5 shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7]">
-                <button
-                  className="w-6 h-6 flex items-center justify-center hover:bg-[#C9A227]/20 transition-colors"
-                  onClick={() => updateQuantity(item.menuId, -1)}
-                >
-                  <Minus className="w-3 h-3" />
-                </button>
-                <span className="text-sm font-black w-5 text-center text-[#18181B] dark:text-[#FFFDF7]">{itemQuantity}</span>
-                <button
-                  className="w-6 h-6 flex items-center justify-center hover:bg-[#C9A227]/20 transition-colors"
-                  onClick={() => updateQuantity(item.menuId, 1)}
-                >
-                  <Plus className="w-3 h-3" />
-                </button>
-              </div>
-
-              <span className="text-xs font-black text-[#18181B] dark:text-[#FFFDF7] w-16 text-right shrink-0">
-                Rp {(itemPrice * itemQuantity).toLocaleString('id-ID')}
-              </span>
-
-              {/* Tombol Hapus - Sekarang selalu terlihat dengan background dan border yang jelas */}
-              <button
-                className="w-8 h-8 border-2 border-[#7F1D1D] bg-[#7F1D1D]/10 flex items-center justify-center transition-all hover:bg-[#7F1D1D] hover:text-[#FFFDF7] dark:border-[#C9A227] dark:bg-[#7F1D1D]/30 dark:hover:bg-[#7F1D1D] shrink-0 hover:scale-110 active:scale-95"
-                onClick={() => removeFromCart(item.menuId)}
-                title="Hapus item dari keranjang"
-              >
-                <Trash2 className="w-4 h-4 text-[#7F1D1D] dark:text-[#FFFDF7] hover:text-[#FFFDF7]" />
-              </button>
-            </div>
-          );
-        })
-      )}
-    </div>
-
-    {/* Footer - Payment & Total - tetap sama */}
-    <div className="border-t-4 border-[#18181B] p-4 space-y-3 bg-[#E7D9B8] dark:border-[#FFFDF7] dark:bg-[#18181B] shrink-0">
-      <div>
-        <label className="text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7] block mb-2">
-          Metode Pembayaran
-        </label>
-        <div className="grid grid-cols-2 gap-2.5">
-          <button
-            type="button"
-            onClick={() => setPaymentType('CASH')}
-            className={`border-2 border-[#18181B] py-2.5 px-3 text-sm font-black flex items-center justify-center gap-1.5 transition-all shadow-[3px_3px_0px_#18181B] active:scale-95 dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7] hover-scale-bounce ${
-              paymentType === 'CASH'
-                ? 'bg-[#065F46] text-[#FFFDF7] shadow-[3px_3px_0px_#18181B] dark:shadow-[3px_3px_0px_#FFFDF7]'
-                : 'bg-[#FFFDF7] text-[#18181B] hover:bg-[#065F46]/10 dark:bg-[#18181B] dark:text-[#FFFDF7] dark:hover:bg-[#065F46]/20'
-            }`}
-          >
-            {paymentType === 'CASH' && <Check className="w-4 h-4" />}
-            <Banknote className="w-4 h-4" />
-            <span>Tunai</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setPaymentType('MIDTRANS')}
-            className={`border-2 border-[#18181B] py-2.5 px-3 text-sm font-black flex items-center justify-center gap-1.5 transition-all shadow-[3px_3px_0px_#18181B] active:scale-95 dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7] hover-scale-bounce ${
-              paymentType === 'MIDTRANS'
-                ? 'bg-[#7F1D1D] text-[#FFFDF7] shadow-[3px_3px_0px_#18181B] dark:shadow-[3px_3px_0px_#FFFDF7]'
-                : 'bg-[#FFFDF7] text-[#18181B] hover:bg-[#7F1D1D]/10 dark:bg-[#18181B] dark:text-[#FFFDF7] dark:hover:bg-[#7F1D1D]/20'
-            }`}
-          >
-            {paymentType === 'MIDTRANS' && <Check className="w-4 h-4" />}
-            <QrCode className="w-4 h-4" />
-            <span>QRIS</span>
-          </button>
-        </div>
-      </div>
-
-      <div className="flex justify-between items-center">
-        <span className="text-sm font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70">Total Tagihan</span>
-        <span className="text-xl font-black text-[#7F1D1D] dark:text-[#C9A227]">
-          Rp {totalAmount.toLocaleString('id-ID')}
-        </span>
-      </div>
-
-      <button
-        className="w-full border-4 border-[#18181B] bg-[#7F1D1D] text-[#FFFDF7] font-black py-3 shadow-[6px_6px_0px_#18181B] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[2px_2px_0px_#18181B] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 dark:border-[#FFFDF7] dark:shadow-[6px_6px_0px_#FFFDF7] dark:hover:shadow-[10px_10px_0px_#FFFDF7] text-base card-lift-premium"
-        onClick={handleCheckout}
-        disabled={cart.length === 0 || checkoutMutation.isPending}
-      >
-        {checkoutMutation.isPending ? (
-          <span className="flex items-center justify-center gap-2">
-            <span className="w-4 h-4 border-2 border-[#FFFDF7] border-t-transparent rounded-full animate-spin" />
-            Memproses...
-          </span>
-        ) : (
-          'Proses Pembayaran'
+        {orderType === 'dine-in' && (
+          <div className="space-y-1 animate-in fade-in zoom-in-95 duration-200">
+            <label className="text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7]">
+              Nomor Meja <span className="text-[#7F1D1D]">*</span>
+            </label>
+            <NeoInput
+              placeholder="Contoh: Meja 5"
+              value={tableNumber}
+              onChange={(e) => setTableNumber(e.target.value)}
+              className="w-full"
+            />
+          </div>
         )}
-      </button>
-    </div>
-  </div>
-);
+      </div>
 
-  // ============================================================
-  // PANEL: PESANAN MASUK
-  // ============================================================
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-1">
+        {cart.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center gap-3 opacity-50">
+            <ShoppingCart className="w-10 h-10 text-[#18181B]/50 dark:text-[#FFFDF7]/50" />
+            <p className="text-sm font-black text-[#18181B]/50 dark:text-[#FFFDF7]/50">Keranjang masih kosong</p>
+            <p className="text-xs font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 text-center">Pilih menu di sebelah kiri</p>
+          </div>
+        ) : (
+          cart.map((item) => {
+            const itemPrice = toSafeNumber(item?.price);
+            const itemQuantity = toSafeNumber(item?.quantity);
+            return (
+              <div
+                key={item.menuId}
+                className="flex items-center gap-3 border-2 border-[#18181B]/20 p-2 hover:bg-[#C9A227]/10 dark:border-[#FFFDF7]/10 dark:hover:bg-[#C9A227]/20 transition-colors card-hover-frame"
+              >
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-black text-[#18181B] dark:text-[#FFFDF7] line-clamp-1">{item?.name || 'Menu'}</h4>
+                  <p className="text-xs font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70">
+                    Rp {itemPrice.toLocaleString('id-ID')}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 border-2 border-[#18181B] p-0.5 shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7]">
+                  <button
+                    className="w-6 h-6 flex items-center justify-center hover:bg-[#C9A227]/20 transition-colors"
+                    onClick={() => updateQuantity(item.menuId, -1)}
+                  >
+                    <Minus className="w-3 h-3" />
+                  </button>
+                  <span className="text-sm font-black w-5 text-center text-[#18181B] dark:text-[#FFFDF7]">{itemQuantity}</span>
+                  <button
+                    className="w-6 h-6 flex items-center justify-center hover:bg-[#C9A227]/20 transition-colors"
+                    onClick={() => updateQuantity(item.menuId, 1)}
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
+                <span className="text-xs font-black text-[#18181B] dark:text-[#FFFDF7] w-16 text-right shrink-0">
+                  Rp {(itemPrice * itemQuantity).toLocaleString('id-ID')}
+                </span>
+                <button
+                  className="w-8 h-8 border-2 border-[#7F1D1D] bg-[#7F1D1D]/10 flex items-center justify-center transition-all hover:bg-[#7F1D1D] hover:text-[#FFFDF7] dark:border-[#C9A227] dark:bg-[#7F1D1D]/30 dark:hover:bg-[#7F1D1D] shrink-0 hover:scale-110 active:scale-95"
+                  onClick={() => removeFromCart(item.menuId)}
+                  title="Hapus item dari keranjang"
+                >
+                  <Trash2 className="w-4 h-4 text-[#7F1D1D] dark:text-[#FFFDF7] hover:text-[#FFFDF7]" />
+                </button>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      <div className="border-t-4 border-[#18181B] p-4 space-y-3 bg-[#E7D9B8] dark:border-[#FFFDF7] dark:bg-[#18181B] shrink-0">
+        <div>
+          <label className="text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7] block mb-2">
+            Metode Pembayaran
+          </label>
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onClick={() => setPaymentType('CASH')}
+              className={`border-2 border-[#18181B] py-2.5 px-3 text-sm font-black flex items-center justify-center gap-1.5 transition-all shadow-[3px_3px_0px_#18181B] active:scale-95 dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7] hover-scale-bounce ${
+                paymentType === 'CASH'
+                  ? 'bg-[#065F46] text-[#FFFDF7] shadow-[3px_3px_0px_#18181B] dark:shadow-[3px_3px_0px_#FFFDF7]'
+                  : 'bg-[#FFFDF7] text-[#18181B] hover:bg-[#065F46]/10 dark:bg-[#18181B] dark:text-[#FFFDF7] dark:hover:bg-[#065F46]/20'
+              }`}
+            >
+              {paymentType === 'CASH' && <Check className="w-4 h-4" />}
+              <Banknote className="w-4 h-4" />
+              <span>Tunai</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentType('MIDTRANS')}
+              className={`border-2 border-[#18181B] py-2.5 px-3 text-sm font-black flex items-center justify-center gap-1.5 transition-all shadow-[3px_3px_0px_#18181B] active:scale-95 dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7] hover-scale-bounce ${
+                paymentType === 'MIDTRANS'
+                  ? 'bg-[#7F1D1D] text-[#FFFDF7] shadow-[3px_3px_0px_#18181B] dark:shadow-[3px_3px_0px_#FFFDF7]'
+                  : 'bg-[#FFFDF7] text-[#18181B] hover:bg-[#7F1D1D]/10 dark:bg-[#18181B] dark:text-[#FFFDF7] dark:hover:bg-[#7F1D1D]/20'
+              }`}
+            >
+              {paymentType === 'MIDTRANS' && <Check className="w-4 h-4" />}
+              <QrCode className="w-4 h-4" />
+              <span>QRIS</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center">
+          <span className="text-sm font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70">Total Tagihan</span>
+          <span className="text-xl font-black text-[#7F1D1D] dark:text-[#C9A227]">
+            Rp {totalAmount.toLocaleString('id-ID')}
+          </span>
+        </div>
+
+        <button
+          className="w-full border-4 border-[#18181B] bg-[#7F1D1D] text-[#FFFDF7] font-black py-3 shadow-[6px_6px_0px_#18181B] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[2px_2px_0px_#18181B] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 dark:border-[#FFFDF7] dark:shadow-[6px_6px_0px_#FFFDF7] dark:hover:shadow-[10px_10px_0px_#FFFDF7] text-base card-lift-premium"
+          onClick={handleCheckout}
+          disabled={cart.length === 0 || checkoutMutation.isPending}
+        >
+          {checkoutMutation.isPending ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="w-4 h-4 border-2 border-[#FFFDF7] border-t-transparent rounded-full animate-spin" />
+              Memproses...
+            </span>
+          ) : (
+            'Proses Pembayaran'
+          )}
+        </button>
+      </div>
+    </div>
+  );
 
   const IncomingOrdersPanel = () => (
     <div className="flex flex-col h-full min-h-0 bg-[#FFFDF7] dark:bg-[#18181B]">
@@ -726,12 +699,8 @@ const CartPanel = () => (
             const orderId = order?.id || '';
             const orderItems = Array.isArray(order?.items) ? order.items : [];
             const orderTotalAmount = toSafeNumber(order?.totalAmount);
-
             return (
-              <NeoCard 
-                key={orderId || index} 
-                className={`p-4 animate-fade-in-up-delay-${(index % 4) + 1}`}
-              >
+              <NeoCard key={orderId || index} className={`p-4 animate-fade-in-up-delay-${(index % 4) + 1}`}>
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="font-black text-sm text-[#18181B] dark:text-[#FFFDF7]">{order?.customerName || 'Pelanggan'}</p>
@@ -796,14 +765,8 @@ const CartPanel = () => (
     </div>
   );
 
-  // ============================================================
-  // RENDER UTAMA
-  // ============================================================
-
   return (
     <div className="bg-[#FFFDF7] dark:bg-[#18181B] min-h-screen">
-
-      {/* ── Tab Switcher ── */}
       <div className="flex gap-2 mb-4 p-1 border-4 border-[#18181B] bg-[#FFFDF7] shadow-[6px_6px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[6px_6px_0px_#FFFDF7] w-fit animate-fade-in-up">
         <button
           onClick={() => setActiveTab('pos')}
@@ -838,10 +801,7 @@ const CartPanel = () => (
         </NeoCard>
       ) : (
         <>
-          {/* ── Layout utama POS ── */}
           <div className="flex flex-col lg:flex-row gap-5 lg:h-[calc(100vh-8rem)]">
-
-            {/* ───── Sisi Kiri: Daftar Menu ───── */}
             <div className="w-full lg:flex-1 flex flex-col h-[calc(100dvh-10rem)] lg:h-auto">
               <NeoCard className="flex flex-col h-full overflow-hidden animate-fade-in-up">
                 <div className="border-b-4 border-[#18181B] bg-[#7F1D1D] px-4 py-3 flex items-center justify-between shrink-0 dark:border-[#FFFDF7]">
@@ -889,7 +849,6 @@ const CartPanel = () => (
                         const menuName = menu?.name || 'Menu';
                         const menuPrice = toSafeNumber(menu?.price);
                         const menuStock = toSafeNumber(menu?.stock);
-
                         return (
                           <div
                             key={menu?.id || `${menuName}-${index}`}
@@ -905,7 +864,6 @@ const CartPanel = () => (
                                 </div>
                               </div>
                             )}
-
                             <div className="p-2 relative">
                               <div className="aspect-square overflow-hidden mb-2 bg-[#E7D9B8] border-2 border-[#18181B] dark:border-[#FFFDF7]">
                                 <img
@@ -914,15 +872,12 @@ const CartPanel = () => (
                                   className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                                 />
                               </div>
-
                               <p className="text-[10px] font-black uppercase tracking-wider text-[#18181B]/50 dark:text-[#FFFDF7]/50 mb-0.5">
                                 {menu?.category || 'LAINNYA'}
                               </p>
-
                               <h3 className="font-black text-sm leading-tight line-clamp-1 text-[#18181B] dark:text-[#FFFDF7]">
                                 {menuName}
                               </h3>
-
                               <div className="flex justify-between items-center mt-2 pt-2 border-t-2 border-[#18181B]/20 dark:border-[#FFFDF7]/20">
                                 <p className="text-[#7F1D1D] dark:text-[#C9A227] font-black text-sm">
                                   Rp {menuPrice.toLocaleString('id-ID')}
@@ -945,13 +900,11 @@ const CartPanel = () => (
               </NeoCard>
             </div>
 
-            {/* ───── Sisi Kanan: Keranjang — DESKTOP ONLY ───── */}
             <div className="hidden lg:flex w-[420px] flex-col min-h-0 shrink-0 animate-slide-right">
               <CartPanel />
             </div>
           </div>
 
-          {/* ───── MOBILE: Floating Cart Bar ───── */}
           <div className="lg:hidden">
             {cartDrawerOpen && (
               <div
@@ -959,7 +912,6 @@ const CartPanel = () => (
                 onClick={() => setCartDrawerOpen(false)}
               />
             )}
-
             <div
               className={`fixed inset-x-0 bottom-0 z-50 border-4 border-[#18181B] bg-[#FFFDF7] shadow-[-8px_0_0px_#18181B] transition-transform duration-300 ease-in-out flex flex-col dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[-8px_0_0px_#FFFDF7] ${
                 cartDrawerOpen ? 'translate-y-0' : 'translate-y-full'
@@ -968,7 +920,6 @@ const CartPanel = () => (
             >
               <CartPanel />
             </div>
-
             {!cartDrawerOpen && (
               <div className="fixed inset-x-0 bottom-0 z-30 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFDF7] to-transparent dark:from-[#18181B]">
                 <button

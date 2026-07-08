@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 
 // Halaman & Layout Utama
@@ -17,7 +17,7 @@ import Profile from './pages/Profile';
 
 function App() {
   return (
-    <Router>
+    <>
       {/* Pattern background global dengan animasi */}
       <div className="fixed inset-0 bg-pattern bg-dot-grid pointer-events-none z-0" />
       
@@ -35,14 +35,8 @@ function App() {
               <Route path="/kasir" element={<Kasir />} />
               <Route path="/dapur" element={<Dapur />} />
               <Route path="/profil" element={<Profile />} />
-              
-              {/* Rute ini memanggil komponen KelolaMenu yang asli */}
               <Route path="/menu" element={<KelolaMenu />} />
-              
-              {/* Rute ini sekarang memanggil komponen Riwayat yang baru dibuat */}
               <Route path="/riwayat" element={<Riwayat />} />
-              
-              {/* Rute ini sekarang memanggil komponen Karyawan yang baru dibuat */}
               <Route path="/karyawan" element={<Karyawan />} />
             </Route>
           </Route>
@@ -51,7 +45,7 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </div>
-    </Router>
+    </>
   );
 }
 

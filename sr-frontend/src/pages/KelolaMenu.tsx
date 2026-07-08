@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useGlobalLoading } from '@/components/GlobalLoadingProvider';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Search, UtensilsCrossed, ChefHat, X } from 'lucide-react';
 
@@ -60,6 +61,7 @@ const toSafeNumber = (value: unknown) => {
 };
 
 export default function KelolaMenu() {
+  const { showLoading, hideLoading } = useGlobalLoading();
   const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
 
@@ -70,6 +72,9 @@ export default function KelolaMenu() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+  const [uploadMethod, setUploadMethod] = useState<'file' | 'url'>('file');
+  const [imageUrlInput, setImageUrlInput] = useState('');
+
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -79,42 +84,61 @@ export default function KelolaMenu() {
   });
 
   const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+  // ── Query Ambil Menu ──
   const { data: menus, isLoading } = useQuery<Menu[]>({
     queryKey: ['menus'],
     queryFn: async () => {
+      const isFirstLoad = !queryClient.getQueryData(['menus']);
+      if (isFirstLoad) {
+        showLoading('Memuat daftar menu...');
+      }
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/menu`, axiosConfig);
+        const res = await axios.get(`${API_URL}/api/menu`, axiosConfig);
         return Array.isArray(res.data?.data) ? res.data.data : [];
       } catch (error) {
         console.error('Gagal memuat menu:', error);
         return [];
+      } finally {
+        if (!queryClient.getQueryData(['menus'])) {
+          setTimeout(() => hideLoading(), 300);
+        }
       }
-    }
+    },
+    refetchOnWindowFocus: false,
+    staleTime: 20000,
   });
 
+  // ── Mutation Create (File Upload) ──
   const createMutation = useMutation({
-    mutationFn: async (payload: FormData) => axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/menu`, payload, axiosConfig),
+    mutationFn: async (payload: FormData) => axios.post(`${API_URL}/api/menu`, payload, axiosConfig),
     onSuccess: () => {
       toast.success('✅ Menu baru berhasil ditambahkan!');
       queryClient.invalidateQueries({ queryKey: ['menus'] });
       closeModal();
     },
-    onError: () => toast.error('Gagal menambahkan menu')
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Gagal menambahkan menu');
+    }
   });
 
+  // ── Mutation Edit (File Upload) ──
   const editMutation = useMutation({
-    mutationFn: async (payload: FormData) => axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/menu/${editingId}`, payload, axiosConfig),
+    mutationFn: async (payload: FormData) => axios.put(`${API_URL}/api/menu/${editingId}`, payload, axiosConfig),
     onSuccess: () => {
       toast.success('✅ Data menu berhasil diperbarui!');
       queryClient.invalidateQueries({ queryKey: ['menus'] });
       closeModal();
     },
-    onError: () => toast.error('Gagal memperbarui menu')
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Gagal memperbarui menu');
+    }
   });
 
+  // ── Mutation Delete ──
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/menu/${id}`, axiosConfig),
+    mutationFn: async (id: string) => axios.delete(`${API_URL}/api/menu/${id}`, axiosConfig),
     onSuccess: () => {
       toast.success('✅ Menu berhasil dihapus!');
       queryClient.invalidateQueries({ queryKey: ['menus'] });
@@ -125,12 +149,15 @@ export default function KelolaMenu() {
   const handleOpenAdd = () => {
     setFormData({ name: '', price: '', category: 'AYAM & BEBEK', stock: '', imageUrl: '' });
     setImageFile(null);
+    setImageUrlInput('');
+    setUploadMethod('file');
     if (fileInputRef.current) fileInputRef.current.value = '';
     setIsEditing(false);
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (menu: Menu) => {
+    const hasImageUrl = menu.imageUrl && menu.imageUrl.trim() !== '';
     setFormData({
       name: menu.name || '',
       price: String(toSafeNumber(menu.price)),
@@ -138,6 +165,8 @@ export default function KelolaMenu() {
       stock: String(toSafeNumber(menu.stock)),
       imageUrl: menu.imageUrl || ''
     });
+    setImageUrlInput(menu.imageUrl || '');
+    setUploadMethod(hasImageUrl ? 'url' : 'file');
     setEditingId(menu.id);
     setImageFile(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -149,12 +178,63 @@ export default function KelolaMenu() {
     setIsModalOpen(false);
     setFormData({ name: '', price: '', category: 'AYAM & BEBEK', stock: '', imageUrl: '' });
     setImageFile(null);
+    setImageUrlInput('');
+    setUploadMethod('file');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  // ── FIX: handleSubmit dengan support file dan URL ──
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // ── CASE 1: Menggunakan URL ──
+    if (uploadMethod === 'url') {
+      const url = imageUrlInput.trim();
+      if (!url) {
+        toast.error('URL gambar wajib diisi!');
+        return;
+      }
+      
+      // Validasi URL
+      try {
+        new URL(url);
+      } catch {
+        toast.error('URL gambar tidak valid! Pastikan format URL benar.');
+        return;
+      }
+
+      // Kirim sebagai JSON (bukan FormData)
+      const payload = {
+        name: formData.name,
+        price: Number(formData.price),
+        category: formData.category,
+        stock: Number(formData.stock),
+        imageUrl: url // 👈 Kirim imageUrl ke backend
+      };
+
+      showLoading(isEditing ? 'Memperbarui menu...' : 'Menambahkan menu...');
+
+      const request = isEditing
+        ? axios.put(`${API_URL}/api/menu/${editingId}`, payload, axiosConfig)
+        : axios.post(`${API_URL}/api/menu`, payload, axiosConfig);
+
+      request
+        .then(() => {
+          toast.success(isEditing ? '✅ Data menu berhasil diperbarui!' : '✅ Menu baru berhasil ditambahkan!');
+          queryClient.invalidateQueries({ queryKey: ['menus'] });
+          closeModal();
+        })
+        .catch((err) => {
+          console.error('Error:', err);
+          toast.error(err.response?.data?.message || 'Gagal memproses menu');
+        })
+        .finally(() => {
+          setTimeout(() => hideLoading(), 300);
+        });
+      return;
+    }
+
+    // ── CASE 2: Upload File ──
     const submitData = new FormData();
     submitData.append('name', formData.name);
     submitData.append('price', formData.price);
@@ -163,11 +243,7 @@ export default function KelolaMenu() {
 
     if (imageFile) {
       submitData.append('image', imageFile);
-    } else if (formData.imageUrl) {
-      submitData.append('imageUrl', formData.imageUrl);
-    }
-
-    if (!isEditing && !imageFile) {
+    } else if (!isEditing) {
       toast.error('Gambar menu wajib diunggah!');
       return;
     }
@@ -251,12 +327,12 @@ export default function KelolaMenu() {
         </NeoButton>
       </div>
 
-      {/* Modal dengan Tombol Close (X) */}
+      {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#18181B]/80 p-4">
           <div className="w-full max-w-md border-4 border-[#18181B] bg-[#FFFDF7] shadow-[12px_12px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[12px_12px_0px_#FFFDF7] max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              {/* Header Modal dengan Tombol Close */}
+              {/* Header Modal */}
               <div className="flex items-center justify-between mb-4 border-b-2 border-[#18181B] pb-3 dark:border-[#FFFDF7]">
                 <div className="flex items-center gap-2">
                   <UtensilsCrossed className="w-5 h-5 text-[#7F1D1D] dark:text-[#C9A227]" />
@@ -307,23 +383,76 @@ export default function KelolaMenu() {
                   </select>
                 </div>
 
-                <div className="space-y-1.5">
+                {/* ── Gambar Menu dengan Toggle ── */}
+                <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7]">
                     Gambar Menu {isEditing ? '(Opsional)' : ''}
                   </label>
-                  <NeoInput
-                    type="file"
-                    accept="image/*"
-                    ref={fileInputRef}
-                    onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                    required={!isEditing}
-                    className="py-1"
-                  />
-                  {isEditing && formData.imageUrl && (
+                  
+                  {/* Toggle buttons */}
+                  <div className="flex gap-2 border-2 border-[#18181B] p-1 dark:border-[#FFFDF7]">
+                    <button
+                      type="button"
+                      onClick={() => setUploadMethod('file')}
+                      className={`flex-1 py-1.5 text-xs font-black transition-all ${
+                        uploadMethod === 'file'
+                          ? 'bg-[#7F1D1D] text-[#FFFDF7] border-2 border-[#18181B] shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7]'
+                          : 'bg-[#FFFDF7] text-[#18181B] hover:bg-[#C9A227]/20 dark:bg-[#18181B] dark:text-[#FFFDF7] dark:hover:bg-[#C9A227]/20'
+                      }`}
+                    >
+                      📁 Upload File
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUploadMethod('url')}
+                      className={`flex-1 py-1.5 text-xs font-black transition-all ${
+                        uploadMethod === 'url'
+                          ? 'bg-[#7F1D1D] text-[#FFFDF7] border-2 border-[#18181B] shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7]'
+                          : 'bg-[#FFFDF7] text-[#18181B] hover:bg-[#C9A227]/20 dark:bg-[#18181B] dark:text-[#FFFDF7] dark:hover:bg-[#C9A227]/20'
+                      }`}
+                    >
+                      🔗 Gunakan Link
+                    </button>
+                  </div>
+
+                  {/* File Upload */}
+                  {uploadMethod === 'file' && (
+                    <NeoInput
+                      type="file"
+                      accept="image/*"
+                      ref={fileInputRef}
+                      onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                      required={!isEditing}
+                      className="py-1 w-full"
+                    />
+                  )}
+
+                  {/* URL Input */}
+                  {uploadMethod === 'url' && (
+                    <div className="space-y-1.5">
+                      <NeoInput
+                        type="url"
+                        placeholder="https://example.com/gambar-menu.jpg"
+                        value={imageUrlInput}
+                        onChange={(e) => setImageUrlInput(e.target.value)}
+                        className="w-full"
+                        required={!isEditing}
+                      />
+                      
+                    </div>
+                  )}
+
+                  {/* Preview link saat edit */}
+                  {isEditing && formData.imageUrl && uploadMethod === 'url' && (
                     <div className="mt-1.5 text-xs font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 flex items-center gap-2">
                       <span>Gambar saat ini:</span>
-                      <a href={formData.imageUrl} target="_blank" rel="noreferrer" className="text-[#7F1D1D] dark:text-[#C9A227] hover:underline">
-                        Lihat Gambar
+                      <a 
+                        href={formData.imageUrl} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="text-[#7F1D1D] dark:text-[#C9A227] hover:underline truncate max-w-[200px]"
+                      >
+                        {formData.imageUrl}
                       </a>
                     </div>
                   )}
@@ -377,6 +506,9 @@ export default function KelolaMenu() {
                       src={menu?.imageUrl || 'https://via.placeholder.com/300'}
                       alt={menuName}
                       className={`w-full h-full object-cover transition-transform duration-300 hover:scale-105 ${menuStock <= 0 ? 'grayscale opacity-60' : ''}`}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300/FFD700/18181B?text=No+Image';
+                      }}
                     />
                     {menuStock <= 0 && (
                       <div className="absolute top-2 right-2 z-10 border-2 border-[#18181B] bg-[#7F1D1D] text-[#FFFDF7] text-[10px] font-black px-2 py-1 shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7]">

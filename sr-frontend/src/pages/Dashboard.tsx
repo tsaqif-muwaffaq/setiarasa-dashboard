@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useGlobalLoading } from '@/components/GlobalLoadingProvider';
 import { DollarSign, ShoppingBag, Receipt, TrendingUp, CreditCard, Wallet, QrCode, Banknote, ChefHat } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -54,12 +55,11 @@ const emptyDashboardStats: DashboardStats = {
   topMenus: [],
 };
 
-const toSafeNumber = (value: unknown) => {
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? numberValue : 0;
+const toSafeNumber = (value: unknown): number => {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
 };
 
-// ── Komponen Neubrutalism ──
 function NeoCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={`border-4 border-[#18181B] bg-[#FFFDF7] shadow-[6px_6px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[6px_6px_0px_#FFFDF7] card-lift ${className}`}>
@@ -77,33 +77,56 @@ function NeoBadge({ children, className = '' }: { children: React.ReactNode; cla
 }
 
 export default function Dashboard() {
+  const { showLoading, hideLoading } = useGlobalLoading();
+  const queryClient = useQueryClient();
   const token = useAuthStore((state) => state.token);
 
-  const { data: stats, isLoading } = useQuery<DashboardStats>({
+  const { data: stats, isLoading, error } = useQuery<DashboardStats>({
     queryKey: ['dashboardStats'],
     queryFn: async () => {
+      const isFirstLoad = !queryClient.getQueryData(['dashboardStats']);
+      if (isFirstLoad) {
+        showLoading('Memuat data dashboard...');
+      }
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders/stats`, {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await axios.get(`${apiUrl}/api/orders/stats`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = res.data?.data;
-        if (!data || typeof data !== 'object') return emptyDashboardStats;
+        
+        const responseData = res.data?.data;
+        if (!responseData || typeof responseData !== 'object') {
+          console.warn('Invalid stats response structure:', responseData);
+          return emptyDashboardStats;
+        }
+
         return {
-          ...data,
-          totalRevenue: data.totalRevenue ?? 0,
-          orderCount: data.orderCount ?? 0,
-          paymentBreakdown: data.paymentBreakdown ?? emptyPaymentBreakdown,
-          weeklyRevenue: Array.isArray(data.weeklyRevenue) ? data.weeklyRevenue : [],
-          topMenus: Array.isArray(data.topMenus) ? data.topMenus : [],
+          totalRevenue: toSafeNumber(responseData.totalRevenue),
+          orderCount: toSafeNumber(responseData.orderCount),
+          paymentBreakdown: {
+            CASH: toSafeNumber(responseData.paymentBreakdown?.CASH),
+            QRIS: toSafeNumber(responseData.paymentBreakdown?.QRIS),
+            GOPAY: toSafeNumber(responseData.paymentBreakdown?.GOPAY),
+            SHOPEEPAY: toSafeNumber(responseData.paymentBreakdown?.SHOPEEPAY),
+            BANK_TRANSFER: toSafeNumber(responseData.paymentBreakdown?.BANK_TRANSFER),
+            DEBIT: toSafeNumber(responseData.paymentBreakdown?.DEBIT),
+          },
+          weeklyRevenue: Array.isArray(responseData.weeklyRevenue) ? responseData.weeklyRevenue : [],
+          topMenus: Array.isArray(responseData.topMenus) ? responseData.topMenus : [],
         };
-      } catch (error) {
-        console.error('Gagal memuat statistik dashboard:', error);
+      } catch (err) {
+        console.error('Gagal memuat statistik dashboard:', err);
         return emptyDashboardStats;
       } finally {
-        // React Query clears isLoading when this async query settles.
+        if (!queryClient.getQueryData(['dashboardStats'])) {
+          setTimeout(() => hideLoading(), 300);
+        }
       }
     },
-    refetchInterval: 10000,
+    refetchInterval: 30000,
+    retry: 2,
+    refetchOnWindowFocus: false,
+    staleTime: 20000,
   });
 
   const [salesPeriod, setSalesPeriod] = useState<SalesPeriod>('daily');
@@ -111,30 +134,39 @@ export default function Dashboard() {
   const { data: salesTrend, isLoading: isSalesTrendLoading } = useQuery<WeeklyRevenue[]>({
     queryKey: ['salesTrend', salesPeriod],
     queryFn: async () => {
+      const isFirstLoad = !queryClient.getQueryData(['salesTrend', salesPeriod]);
+      if (isFirstLoad) {
+        showLoading('Memuat tren penjualan...');
+      }
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders/sales-trend`, {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await axios.get(`${apiUrl}/api/orders/sales-trend`, {
           headers: { Authorization: `Bearer ${token}` },
           params: { period: salesPeriod },
         });
         return Array.isArray(res.data?.data) ? res.data.data : [];
-      } catch (error) {
-        console.error('Gagal memuat tren penjualan:', error);
+      } catch (err) {
+        console.error('Gagal memuat tren penjualan:', err);
         return [];
       } finally {
-        // React Query clears isLoading when this async query settles.
+        if (!queryClient.getQueryData(['salesTrend', salesPeriod])) {
+          setTimeout(() => hideLoading(), 300);
+        }
       }
     },
-    refetchInterval: 10000,
+    refetchInterval: 30000,
+    retry: 2,
+    refetchOnWindowFocus: false,
+    staleTime: 20000,
   });
 
-  const totalRevenue = toSafeNumber(stats?.totalRevenue);
-  const orderCount = toSafeNumber(stats?.orderCount);
+  const safeStats = stats || emptyDashboardStats;
+  const totalRevenue = toSafeNumber(safeStats.totalRevenue);
+  const orderCount = toSafeNumber(safeStats.orderCount);
   const averageOrderValue = orderCount > 0 ? totalRevenue / orderCount : 0;
-
-  const weeklyData = Array.isArray(stats?.weeklyRevenue) ? stats.weeklyRevenue : [];
-  const topMenus = Array.isArray(stats?.topMenus) ? stats.topMenus : [];
-  const breakdown = stats?.paymentBreakdown || emptyPaymentBreakdown;
-
+  const weeklyData = Array.isArray(safeStats.weeklyRevenue) ? safeStats.weeklyRevenue : [];
+  const topMenus = Array.isArray(safeStats.topMenus) ? safeStats.topMenus : [];
+  const breakdown = safeStats.paymentBreakdown || emptyPaymentBreakdown;
   const salesTrendData = Array.isArray(salesTrend) ? salesTrend : [];
 
   const periodOptions: { value: SalesPeriod; label: string }[] = [
@@ -160,7 +192,7 @@ export default function Dashboard() {
     },
     {
       title: 'Rata-rata Transaksi',
-      value: isLoading ? '...' : `Rp ${averageOrderValue.toLocaleString('id-ID', { maximumFractionDigits: 0 })}`,
+      value: isLoading ? '...' : `Rp ${Math.round(averageOrderValue).toLocaleString('id-ID')}`,
       sub: 'Nilai belanja per pelanggan',
       icon: Receipt,
       color: '#C9A227',
@@ -191,10 +223,27 @@ export default function Dashboard() {
     'bg-[#E7D9B8] text-[#18181B] border-[#18181B]',
   ];
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[70vh] bg-[#FFFDF7] dark:bg-[#18181B]">
+        <div className="border-4 border-[#7F1D1D] bg-[#7F1D1D]/10 p-6 shadow-[6px_6px_0px_#18181B] dark:border-[#C9A227] dark:shadow-[6px_6px_0px_#FFFDF7]">
+          <p className="text-xl font-black text-[#7F1D1D] dark:text-[#C9A227]">⚠️ Gagal Memuat Data</p>
+          <p className="text-sm font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 mt-2">
+            Terjadi kesalahan saat menghubungi server.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 border-4 border-[#18181B] bg-[#7F1D1D] text-[#FFFDF7] px-6 py-2 font-black shadow-[4px_4px_0px_#18181B] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[6px_6px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[4px_4px_0px_#FFFDF7] dark:hover:shadow-[6px_6px_0px_#FFFDF7]"
+          >
+            Muat Ulang
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 pb-10 bg-[#FFFDF7] dark:bg-[#18181B]">
-
-      {/* ===== HEADER ===== */}
       <NeoCard className="p-4 sm:p-6 animate-fade-in-up">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -215,13 +264,9 @@ export default function Dashboard() {
         </div>
       </NeoCard>
 
-      {/* ===== METRIC CARDS ===== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {metricCards?.map(({ title, value, sub, icon: Icon }, index) => (
-          <div 
-            key={title} 
-            className={`animate-fade-in-up-delay-${(index % 4) + 1}`}
-          >
+        {metricCards.map(({ title, value, sub, icon: Icon }, index) => (
+          <div key={title} className={`animate-fade-in-up-delay-${(index % 4) + 1}`}>
             <NeoCard className="p-4 sm:p-5 hover:shadow-[8px_8px_0px_#18181B] dark:hover:shadow-[8px_8px_0px_#FFFDF7] transition-all duration-200 corner-accent">
               <div className="flex items-start justify-between">
                 <div>
@@ -244,13 +289,12 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* ===== PAYMENT BREAKDOWN ===== */}
       <div className="animate-fade-in-up-delay-3">
         <p className="text-xs font-black uppercase tracking-wider text-[#18181B]/50 dark:text-[#FFFDF7]/50 mb-3 px-1">
           📊 Rincian Kas Masuk
         </p>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {paymentMethods?.map(({ label, key, icon: Icon }) => (
+          {paymentMethods.map(({ label, key, icon: Icon }) => (
             <NeoCard key={key} className="p-3 text-center hover:shadow-[8px_8px_0px_#18181B] dark:hover:shadow-[8px_8px_0px_#FFFDF7] transition-all duration-200 hover-scale-bounce">
               <div className="flex flex-col items-center">
                 <div className="flex h-10 w-10 items-center justify-center border-2 border-[#18181B] bg-[#C9A227] shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7]">
@@ -268,10 +312,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ===== CHARTS ROW ===== */}
       <div className="grid grid-cols-1 xl:grid-cols-7 gap-6">
-
-        {/* ===== BAR CHART ===== */}
         <NeoCard className="xl:col-span-4 p-4 sm:p-5 animate-fade-in-up-delay-2">
           <div className="flex items-center gap-3 mb-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-[#18181B] bg-[#C9A227] shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7] hover-scale-bounce">
@@ -286,91 +327,36 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
-
           <div className="h-[300px] w-full mt-2">
             {isLoading ? (
               <div className="w-full h-full flex items-center justify-center gap-2 text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#7F1D1D] border-t-transparent dark:border-[#C9A227] dark:border-t-transparent" />
                 Memuat data dari server...
               </div>
+            ) : weeklyData.length === 0 ? (
+              <div className="w-full h-full flex items-center justify-center text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">
+                Belum ada data penjualan.
+              </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={weeklyData} margin={{ top: 0, right: 0, left: 30, bottom: 0 }}>
-                  <CartesianGrid 
-                    strokeDasharray="3 3" 
-                    vertical={false} 
-                    stroke="#E7D9B8" 
-                    strokeOpacity={0.3} 
-                    className="dark:stroke-[#FFFDF7]/20"
-                  />
-                  <XAxis 
-                    dataKey="name" 
-                    stroke="#18181B"
-                    className="dark:stroke-[#FFFDF7]"
-                    fontSize={11} 
-                    tickLine={false} 
-                    axisLine={false} 
-                    tickMargin={8}
-                    tick={{ 
-                      fill: '#18181B',
-                      fontWeight: 600,
-                      fontSize: 11,
-                    }}
-                  />
-                  <YAxis 
-                    stroke="#18181B"
-                    className="dark:stroke-[#FFFDF7]"
-                    fontSize={11} 
-                    tickLine={false} 
-                    axisLine={false} 
-                    tickFormatter={(value) => `Rp${value / 1000}k`}
-                    tickMargin={8}
-                    tick={{ 
-                      fill: '#18181B',
-                      fontWeight: 600,
-                      fontSize: 11,
-                    }}
-                  />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E7D9B8" strokeOpacity={0.3} className="dark:stroke-[#FFFDF7]/20" />
+                  <XAxis dataKey="name" stroke="#18181B" className="dark:stroke-[#FFFDF7]" fontSize={11} tickLine={false} axisLine={false} tickMargin={8} tick={{ fill: '#18181B', fontWeight: 600, fontSize: 11 }} />
+                  <YAxis stroke="#18181B" className="dark:stroke-[#FFFDF7]" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(value) => `Rp${value / 1000}k`} tickMargin={8} tick={{ fill: '#18181B', fontWeight: 600, fontSize: 11 }} />
                   <Tooltip
-                    cursor={{ 
-                      fill: '#E7D9B8', 
-                      fillOpacity: 0.2,
-                      className: 'dark:fill-[#FFFDF7]/10'
-                    }}
-                    contentStyle={{ 
-                      background: '#FFFDF7',
-                      border: '3px solid #18181B',
-                      borderRadius: '0px',
-                      boxShadow: '6px 6px 0px #18181B',
-                      color: '#18181B',
-                      fontSize: '13px',
-                      fontFamily: 'inherit',
-                      padding: '12px 16px',
-                    }}
-                    labelStyle={{
-                      color: '#18181B',
-                      fontWeight: 900,
-                      fontSize: '13px',
-                    }}
-                    itemStyle={{
-                      color: '#18181B',
-                      fontWeight: 700,
-                    }}
-                    formatter={(value) => [`Rp ${Number(value).toLocaleString('id-ID')}`, 'Pendapatan']}
+                    cursor={{ fill: '#E7D9B8', fillOpacity: 0.2, className: 'dark:fill-[#FFFDF7]/10' }}
+                    contentStyle={{ background: '#FFFDF7', border: '3px solid #18181B', borderRadius: '0px', boxShadow: '6px 6px 0px #18181B', color: '#18181B', fontSize: '13px', fontFamily: 'inherit', padding: '12px 16px' }}
+                    labelStyle={{ color: '#18181B', fontWeight: 900, fontSize: '13px' }}
+                    itemStyle={{ color: '#18181B', fontWeight: 700 }}
+                    formatter={(value) => [`Rp ${toSafeNumber(value).toLocaleString('id-ID')}`, 'Pendapatan']}
                   />
-                  <Bar 
-                    dataKey="total" 
-                    fill="#7F1D1D" 
-                    radius={[4, 4, 0, 0]} 
-                    maxBarSize={44}
-                  />
+                  <Bar dataKey="total" fill="#7F1D1D" radius={[4, 4, 0, 0]} maxBarSize={44} />
                 </BarChart>
               </ResponsiveContainer>
             )}
           </div>
         </NeoCard>
 
-        {/* ===== TOP 5 MENU ===== */}
         <NeoCard className="xl:col-span-3 p-4 sm:p-5 flex flex-col animate-fade-in-up-delay-3">
           <div className="flex items-center gap-3 mb-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-[#18181B] bg-[#C9A227] shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7] hover-scale-bounce">
@@ -385,7 +371,6 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
-
           <div className="flex-1">
             {isLoading ? (
               <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 py-10">
@@ -400,15 +385,11 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-2">
-                {topMenus.map((menu, index) => {
+                {topMenus.slice(0, 5).map((menu, index) => {
                   const menuRevenue = toSafeNumber(menu?.revenue);
                   const menuSold = toSafeNumber(menu?.sold);
-
                   return (
-                    <div 
-                      key={menu?.id || `${menu?.name || 'menu'}-${index}`} 
-                      className="flex items-center justify-between border-2 border-[#18181B]/20 p-3 dark:border-[#FFFDF7]/10 hover:border-[#C9A227]/50 dark:hover:border-[#C9A227]/30 transition-all duration-200 hover-scale-bounce"
-                    >
+                    <div key={menu?.id || `${menu?.name || 'menu'}-${index}`} className="flex items-center justify-between border-2 border-[#18181B]/20 p-3 dark:border-[#FFFDF7]/10 hover:border-[#C9A227]/50 dark:hover:border-[#C9A227]/30 transition-all duration-200 hover-scale-bounce">
                       <div className="flex items-center gap-3 min-w-0">
                         <span className={`flex h-7 w-7 shrink-0 items-center justify-center border-2 border-[#18181B] text-xs font-black shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7] ${rankColors[index]}`}>
                           {index + 1}
@@ -439,7 +420,6 @@ export default function Dashboard() {
         </NeoCard>
       </div>
 
-      {/* ===== SALES TREND LINE CHART ===== */}
       <NeoCard className="p-4 sm:p-5 animate-fade-in-up-delay-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-3">
@@ -455,9 +435,8 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
-
           <div className="flex gap-1 border-2 border-[#18181B] p-1 dark:border-[#FFFDF7]">
-            {periodOptions?.map((opt) => (
+            {periodOptions.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
@@ -473,98 +452,35 @@ export default function Dashboard() {
             ))}
           </div>
         </div>
-
         <div className="h-[300px] w-full mt-2">
           {isSalesTrendLoading ? (
             <div className="w-full h-full flex items-center justify-center gap-2 text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#7F1D1D] border-t-transparent dark:border-[#C9A227] dark:border-t-transparent" />
               Memuat data dari server...
             </div>
+          ) : salesTrendData.length === 0 ? (
+            <div className="w-full h-full flex items-center justify-center text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">
+              Belum ada data tren penjualan.
+            </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={salesTrendData} margin={{ top: 10, right: 20, left: 30, bottom: 0 }}>
-                <CartesianGrid 
-                  strokeDasharray="3 3" 
-                  vertical={false} 
-                  stroke="#E7D9B8" 
-                  strokeOpacity={0.3}
-                  className="dark:stroke-[#FFFDF7]/20"
-                />
-                <XAxis 
-                  dataKey="name" 
-                  stroke="#18181B"
-                  className="dark:stroke-[#FFFDF7]"
-                  fontSize={11} 
-                  tickLine={false} 
-                  axisLine={false} 
-                  tickMargin={8}
-                  tick={{ 
-                    fill: '#18181B',
-                    fontWeight: 600,
-                    fontSize: 11,
-                  }}
-                />
-                <YAxis 
-                  stroke="#18181B"
-                  className="dark:stroke-[#FFFDF7]"
-                  fontSize={11} 
-                  tickLine={false} 
-                  axisLine={false} 
-                  tickFormatter={(value) => `Rp${value / 1000}k`}
-                  tickMargin={8}
-                  tick={{ 
-                    fill: '#18181B',
-                    fontWeight: 600,
-                    fontSize: 11,
-                  }}
-                />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E7D9B8" strokeOpacity={0.3} className="dark:stroke-[#FFFDF7]/20" />
+                <XAxis dataKey="name" stroke="#18181B" className="dark:stroke-[#FFFDF7]" fontSize={11} tickLine={false} axisLine={false} tickMargin={8} tick={{ fill: '#18181B', fontWeight: 600, fontSize: 11 }} />
+                <YAxis stroke="#18181B" className="dark:stroke-[#FFFDF7]" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(value) => `Rp${value / 1000}k`} tickMargin={8} tick={{ fill: '#18181B', fontWeight: 600, fontSize: 11 }} />
                 <Tooltip
-                  cursor={{ 
-                    stroke: '#18181B', 
-                    strokeWidth: 1, 
-                    strokeDasharray: '4 4',
-                    className: 'dark:stroke-[#FFFDF7]'
-                  }}
-                  contentStyle={{ 
-                    background: '#FFFDF7',
-                    border: '3px solid #18181B',
-                    borderRadius: '0px',
-                    boxShadow: '6px 6px 0px #18181B',
-                    color: '#18181B',
-                    fontSize: '13px',
-                    fontFamily: 'inherit',
-                    padding: '12px 16px',
-                  }}
-                  labelStyle={{
-                    color: '#18181B',
-                    fontWeight: 900,
-                    fontSize: '13px',
-                  }}
-                  itemStyle={{
-                    color: '#18181B',
-                    fontWeight: 700,
-                  }}
-                  formatter={(value) => [`Rp ${Number(value).toLocaleString('id-ID')}`, 'Pendapatan']}
+                  cursor={{ stroke: '#18181B', strokeWidth: 1, strokeDasharray: '4 4', className: 'dark:stroke-[#FFFDF7]' }}
+                  contentStyle={{ background: '#FFFDF7', border: '3px solid #18181B', borderRadius: '0px', boxShadow: '6px 6px 0px #18181B', color: '#18181B', fontSize: '13px', fontFamily: 'inherit', padding: '12px 16px' }}
+                  labelStyle={{ color: '#18181B', fontWeight: 900, fontSize: '13px' }}
+                  itemStyle={{ color: '#18181B', fontWeight: 700 }}
+                  formatter={(value) => [`Rp ${toSafeNumber(value).toLocaleString('id-ID')}`, 'Pendapatan']}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="total"
-                  stroke="#7F1D1D"
-                  strokeWidth={3}
-                  dot={{ 
-                    r: 4, 
-                    strokeWidth: 2, 
-                    stroke: '#7F1D1D', 
-                    fill: '#FFFDF7',
-                  }}
-                  activeDot={{ r: 6, fill: '#7F1D1D' }}
-                />
+                <Line type="monotone" dataKey="total" stroke="#7F1D1D" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, stroke: '#7F1D1D', fill: '#FFFDF7' }} activeDot={{ r: 6, fill: '#7F1D1D' }} />
               </LineChart>
             </ResponsiveContainer>
           )}
         </div>
       </NeoCard>
-
     </div>
   );
 }

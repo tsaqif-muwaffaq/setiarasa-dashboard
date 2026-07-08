@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import axios from 'axios';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useGlobalLoading } from '@/components/GlobalLoadingProvider';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { Search, Eye, Receipt, ClipboardList, X, QrCode, Banknote, Wifi, WifiOff } from 'lucide-react';
@@ -191,6 +192,8 @@ function OrderRow({ order, onView, index }: { order: Order; onView: () => void; 
 }
 
 export default function Riwayat() {
+  const { showLoading, hideLoading } = useGlobalLoading();
+  const queryClient = useQueryClient(); // ── FIX: Tambahkan ini ──
   const token = useAuthStore((state) => state.token);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -199,6 +202,10 @@ export default function Riwayat() {
   const { data: orders, isLoading, refetch } = useQuery<Order[]>({
     queryKey: ['orderHistory'],
     queryFn: async () => {
+      const isFirstLoad = !queryClient.getQueryData(['orderHistory']);
+      if (isFirstLoad) {
+        showLoading('Memuat riwayat transaksi...');
+      }
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders/history`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -207,8 +214,14 @@ export default function Riwayat() {
       } catch (error) {
         console.error('Gagal memuat riwayat pesanan:', error);
         return [];
+      } finally {
+        if (!queryClient.getQueryData(['orderHistory'])) {
+          setTimeout(() => hideLoading(), 300);
+        }
       }
     },
+    refetchOnWindowFocus: false,
+    staleTime: 30000,
   });
 
   const safeOrders = Array.isArray(orders)
@@ -442,7 +455,6 @@ export default function Riwayat() {
                     const itemName = item?.menu?.name || 'Menu';
                     const itemQuantity = toSafeNumber(item?.quantity);
                     const itemPrice = toSafeNumber(item?.price);
-
                     return (
                       <div key={item?.id || `${selectedOrder.id}-${itemIndex}`} className="flex items-center gap-3 border-2 border-[#18181B]/20 p-2 dark:border-[#FFFDF7]/10">
                         <div className="w-8 h-8 border-2 border-[#18181B] bg-[#E7D9B8] overflow-hidden shrink-0 dark:border-[#FFFDF7]">
