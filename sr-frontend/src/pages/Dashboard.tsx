@@ -570,7 +570,7 @@ export default function Dashboard() {
                 <YAxis stroke="#18181B" className="dark:stroke-[#FFFDF7]" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(value) => `Rp${value / 1000}k`} tickMargin={8} tick={{ fill: '#18181B', fontWeight: 600, fontSize: 11 }} />
                 <Tooltip
                   cursor={{ stroke: '#18181B', strokeWidth: 1, strokeDasharray: '4 4', className: 'dark:stroke-[#FFFDF7]' }}
-                  contentStyle={{ background: '#FFFDF7', border: '3px solid #18181B', borderRadius: '0px', boxShadow: '6px 6px 0px #18181B', color: '#18181B', fontSize: '13px', fontFamily: 'inherit', padding: '12px 16px' }}
+                  contentStyle={{ background: '#ffffffff', border: '3px solid #18181B', borderRadius: '0px', boxShadow: '6px 6px 0px #18181B', color: '#18181B', fontSize: '13px', fontFamily: 'inherit', padding: '12px 16px' }}
                   labelStyle={{ color: '#18181B', fontWeight: 900, fontSize: '13px' }}
                   itemStyle={{ color: '#18181B', fontWeight: 700 }}
                   formatter={(value) => [`Rp ${toSafeNumber(value).toLocaleString('id-ID')}`, 'Pendapatan']}
