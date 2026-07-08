@@ -1,9 +1,10 @@
-import { useState } from 'react';
+// Dashboard.tsx - Dengan Auto Reset Setiap Jam 00
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGlobalLoading } from '@/components/GlobalLoadingProvider';
-import { DollarSign, ShoppingBag, Receipt, TrendingUp, CreditCard, Wallet, QrCode, Banknote, ChefHat } from 'lucide-react';
+import { DollarSign, ShoppingBag, Receipt, TrendingUp, CreditCard, Wallet, QrCode, Banknote, ChefHat, Clock, RefreshCw } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 interface WeeklyRevenue {
@@ -80,6 +81,50 @@ export default function Dashboard() {
   const { showLoading, hideLoading } = useGlobalLoading();
   const queryClient = useQueryClient();
   const token = useAuthStore((state) => state.token);
+  
+  const [salesPeriod, setSalesPeriod] = useState<SalesPeriod>('daily');
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // ── Auto Reset Setiap Jam 00 ──
+  const resetAtMidnight = useCallback(() => {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    
+    const msUntilMidnight = tomorrow.getTime() - now.getTime();
+    
+    console.log(`[Dashboard] Data akan di-reset dalam ${Math.floor(msUntilMidnight / 60000)} menit`);
+    
+    return setTimeout(() => {
+      console.log('[Dashboard] ⏰ Reset data tengah malam!');
+      // Invalidate semua query yang berkaitan dengan dashboard
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['salesTrend', salesPeriod] });
+      // Update timestamp
+      setLastUpdated(new Date());
+      // Schedule reset berikutnya
+      resetAtMidnight();
+    }, msUntilMidnight);
+  }, [queryClient, salesPeriod]);
+
+  // ── Setup Auto-Reset Saat Mount ──
+  useEffect(() => {
+    const timer = resetAtMidnight();
+    return () => clearTimeout(timer);
+  }, [resetAtMidnight]);
+
+  // ── Manual Refresh ──
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] }),
+      queryClient.invalidateQueries({ queryKey: ['salesTrend', salesPeriod] })
+    ]);
+    setLastUpdated(new Date());
+    setIsRefreshing(false);
+  };
 
   const { data: stats, isLoading, error } = useQuery<DashboardStats>({
     queryKey: ['dashboardStats'],
@@ -128,8 +173,6 @@ export default function Dashboard() {
     refetchOnWindowFocus: false,
     staleTime: 20000,
   });
-
-  const [salesPeriod, setSalesPeriod] = useState<SalesPeriod>('daily');
 
   const { data: salesTrend, isLoading: isSalesTrendLoading } = useQuery<WeeklyRevenue[]>({
     queryKey: ['salesTrend', salesPeriod],
@@ -223,6 +266,13 @@ export default function Dashboard() {
     'bg-[#E7D9B8] text-[#18181B] border-[#18181B]',
   ];
 
+  // ── Format Waktu Terakhir Update ──
+  const formatLastUpdated = (date: Date) => {
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] bg-[#FFFDF7] dark:bg-[#18181B]">
@@ -257,10 +307,25 @@ export default function Dashboard() {
               Pantau arus kas dan performa penjualan secara real-time.
             </p>
           </div>
-          <NeoBadge className="border-[#065F46] text-[#065F46] dark:border-[#34D399] dark:text-[#34D399] animate-pulse-soft">
-            <span className="w-2 h-2 rounded-full bg-[#065F46] dark:bg-[#34D399] mr-2 inline-block animate-pulse" />
-            Live Monitor Aktif
-          </NeoBadge>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">
+              <Clock className="w-3.5 h-3.5" />
+              <span>Update: {formatLastUpdated(lastUpdated)}</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#065F46] animate-pulse dark:bg-[#34D399] inline-block ml-1" />
+            </div>
+            <button
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              className={`border-2 border-[#18181B] p-2 shadow-[2px_2px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7] dark:hover:shadow-[4px_4px_0px_#FFFDF7] ${isRefreshing ? 'opacity-50 cursor-not-allowed' : 'hover-scale-bounce'}`}
+              title="Refresh data"
+            >
+              <RefreshCw className={`w-4 h-4 text-[#18181B] dark:text-[#FFFDF7] ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+            <NeoBadge className="border-[#065F46] text-[#065F46] dark:border-[#34D399] dark:text-[#34D399] animate-pulse-soft">
+              <span className="w-2 h-2 rounded-full bg-[#065F46] dark:bg-[#34D399] mr-2 inline-block animate-pulse" />
+              Live Monitor Aktif
+            </NeoBadge>
+          </div>
         </div>
       </NeoCard>
 
