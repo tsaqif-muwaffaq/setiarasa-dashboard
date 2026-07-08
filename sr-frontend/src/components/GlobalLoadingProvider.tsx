@@ -37,16 +37,7 @@ export function GlobalLoadingProvider({ children }: GlobalLoadingProviderProps) 
 
     setMessage(msg || 'Memuat data...');
     isLoadingRef.current = true;
-
-    if (loadingTimeoutRef.current) {
-      clearTimeout(loadingTimeoutRef.current);
-    }
-
-    loadingTimeoutRef.current = setTimeout(() => {
-      if (isLoadingRef.current) {
-        setIsLoading(true);
-      }
-    }, 300);
+    setIsLoading(true);
   }, []);
 
   const hideLoading = useCallback(() => {
