@@ -24,7 +24,6 @@ interface GlobalLoadingProviderProps {
 export function GlobalLoadingProvider({ children }: GlobalLoadingProviderProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('Memuat data...');
-  // ── FIX: Gunakan ReturnType dari setTimeout ──
   const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoadingRef = useRef(false);
@@ -37,7 +36,16 @@ export function GlobalLoadingProvider({ children }: GlobalLoadingProviderProps) 
 
     setMessage(msg || 'Memuat data...');
     isLoadingRef.current = true;
-    setIsLoading(true);
+
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+
+    loadingTimeoutRef.current = setTimeout(() => {
+      if (isLoadingRef.current) {
+        setIsLoading(true);
+      }
+    }, 300);
   }, []);
 
   const hideLoading = useCallback(() => {
