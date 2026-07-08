@@ -5,10 +5,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { GlobalLoadingProvider } from '@/components/GlobalLoadingProvider';
-import LoadingScreen from '@/components/LoadingScreen';
+import LoadingScreenGlobal from '@/components/LoadingScreenGlobal';
 import './index.css';
 
-// Lazy load App untuk performance
 const App = lazy(() => import('./App'));
 
 const queryClient = new QueryClient({
@@ -28,16 +27,15 @@ function AppWrapper() {
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 600);
-
     return () => clearTimeout(timer);
   }, []);
 
   if (isLoading) {
-    return <LoadingScreen message="Mempersiapkan sistem..." />;
+    return <LoadingScreenGlobal message="Mempersiapkan sistem..." />;
   }
 
   return (
-    <Suspense fallback={<LoadingScreen message="Memuat aplikasi..." />}>
+    <Suspense fallback={<LoadingScreenGlobal message="Memuat aplikasi..." />}>
       <App />
     </Suspense>
   );

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode, useRef, useEffect } from 'react';
-import LoadingScreen from './LoadingScreen';
+import LoadingScreenGlobal from './LoadingScreenGlobal';
 
 interface GlobalLoadingContextType {
   showLoading: (message?: string) => void;
@@ -79,7 +79,7 @@ export function GlobalLoadingProvider({ children }: GlobalLoadingProviderProps) 
   return (
     <GlobalLoadingContext.Provider value={{ showLoading, hideLoading, isLoading }}>
       {children}
-      {isLoading && <LoadingScreen message={message} />}
+      {isLoading && <LoadingScreenGlobal message={message} />}
     </GlobalLoadingContext.Provider>
   );
 }
