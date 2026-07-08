@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useRef } from 'react'; // ← Tambahkan useRef
 import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -70,7 +70,7 @@ export default function KelolaMenu() {
   const [editingId, setEditingId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null); // ← Gunakan useRef langsung
 
   const [uploadMethod, setUploadMethod] = useState<'file' | 'url'>('file');
   const [imageUrlInput, setImageUrlInput] = useState('');
@@ -183,7 +183,7 @@ export default function KelolaMenu() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // ── FIX: handleSubmit dengan support file dan URL ──
+  // ── handleSubmit dengan support file dan URL ──
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -209,7 +209,7 @@ export default function KelolaMenu() {
         price: Number(formData.price),
         category: formData.category,
         stock: Number(formData.stock),
-        imageUrl: url // 👈 Kirim imageUrl ke backend
+        imageUrl: url
       };
 
       showLoading(isEditing ? 'Memperbarui menu...' : 'Menambahkan menu...');
@@ -438,7 +438,9 @@ export default function KelolaMenu() {
                         className="w-full"
                         required={!isEditing}
                       />
-                      
+                      <p className="text-[10px] font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">
+                        Contoh: https://sahabatnesia.com/wp-content/uploads/2017/11/2-9.jpg
+                      </p>
                     </div>
                   )}
 
