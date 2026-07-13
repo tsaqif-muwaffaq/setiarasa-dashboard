@@ -7,7 +7,7 @@ export default function AppLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-[#FFFDF7] text-[#18181B] relative transition-colors duration-300 dark:bg-[#18181B] dark:text-[#FFFDF7]">
+    <div className="flex h-screen bg-[#FFFDF7] text-[#18181B] relative transition-colors duration-300 dark:bg-[#18181B] dark:text-[#FFFDF7] overflow-hidden">
       {/* Pattern background untuk konten utama */}
       <div className="fixed inset-0 bg-pattern bg-dot-grid pointer-events-none z-0" />
       
@@ -16,10 +16,10 @@ export default function AppLayout() {
         onClose={() => setIsMobileMenuOpen(false)} 
       />
       
-      <div className="flex-1 flex flex-col min-w-0 relative z-10">
+      <div className="flex-1 flex flex-col min-w-0 relative z-10 overflow-x-hidden">
         <Topbar onMenuClick={() => setIsMobileMenuOpen(true)} />
         
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto bg-grain">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto overflow-x-hidden bg-grain">
           <Outlet />
         </main>
       </div>

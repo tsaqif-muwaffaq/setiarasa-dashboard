@@ -1,15 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Lock, Mail, ArrowRight } from 'lucide-react';
+import { Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { FloatingShapes } from '@/components/FloatingShapes';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
@@ -48,23 +50,22 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#FFFDF7] dark:bg-[#18181B] p-4 transition-colors duration-300 relative overflow-hidden">
-      {/* Pattern Background */}
-      <div className="absolute inset-0 bg-pattern bg-dot-grid pointer-events-none" />
+      {/* Floating Shapes Dekoratif */}
+      <FloatingShapes />
       
-      {/* Decorative Floating Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-[#C9A227]/5 rounded-full blur-3xl animate-float" />
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-[#7F1D1D]/5 rounded-full blur-3xl animate-float-delay-1" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#065F46]/3 rounded-full blur-3xl animate-float-delay-2" />
-      </div>
-
+      {/* Animated Grid Overlay */}
+      <div className="animated-grid-overlay" />
+      
+      {/* Animated Dots Overlay */}
+      <div className="animated-dots-overlay" />
+      
       {/* Theme Toggle */}
       <div className="absolute top-4 right-4 z-20">
         <ThemeToggle />
       </div>
 
       {/* Card Login - Neubrutalism dengan animasi masuk */}
-      <div className="relative max-w-md w-full border-4 border-[#18181B] bg-[#FFFDF7] shadow-[12px_12px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[12px_12px_0px_#FFFDF7] overflow-hidden animate-fade-in-up corner-accent">
+      <div className="relative max-w-md w-full border-4 border-[#18181B] bg-[#FFFDF7] shadow-[12px_12px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[12px_12px_0px_#FFFDF7] overflow-hidden animate-fade-in-up corner-accent-animated">
         {/* Top accent bar - gradasi profesional dengan shimmer */}
         <div className="h-2 w-full bg-gradient-to-r from-[#7F1D1D] via-[#C9A227] to-[#065F46] animate-shimmer" />
 
@@ -73,7 +74,7 @@ export default function Login() {
           {/* Brand Section */}
           <div className="text-center space-y-3">
             <div className="flex justify-center">
-              <div className="w-20 h-20 rounded-2xl border-4 border-[#18181B] bg-[#FFFDF7] p-2 shadow-[4px_4px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[4px_4px_0px_#FFFDF7] flex items-center justify-center hover-scale-bounce">
+              <div className="w-20 h-20 rounded-2xl border-4 border-[#18181B] bg-[#FFFDF7] p-2 shadow-[4px_4px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[4px_4px_0px_#FFFDF7] flex items-center justify-center hover-scale-bounce avatar-glow">
                 <img 
                   src="/logo.png" 
                   alt="Logo Setia Rasa" 
@@ -82,10 +83,10 @@ export default function Login() {
               </div>
             </div>
             <div>
-              <h1 className="text-2xl font-black tracking-tight text-[#7F1D1D] dark:text-[#C9A227]">
+              <h1 className="text-2xl font-black tracking-tight text-gradient">
                 Setia Rasa
               </h1>
-              <p className="text-xs font-bold uppercase tracking-wider text-[#18181B]/50 dark:text-[#FFFDF7]/50 mt-1">
+              <p className="text-xs font-bold uppercase tracking-wider text-[#18181B]/50 dark:text-[#FFFDF7]/50 mt-1 typing-text inline-block">
                 Internal Point of Sales System
               </p>
             </div>
@@ -120,20 +121,32 @@ export default function Login() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#18181B]/40 dark:text-[#FFFDF7]/40" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
-                  className="w-full pl-10 pr-4 py-2.5 border-2 border-[#18181B]/30 bg-[#FFFDF7] focus:border-[#7F1D1D] focus:shadow-[0_0_0_3px_rgba(127,29,29,0.15)] outline-none text-sm font-medium text-[#18181B] transition-all rounded-lg dark:border-[#FFFDF7]/30 dark:bg-[#18181B] dark:text-[#FFFDF7] dark:focus:border-[#C9A227] dark:focus:shadow-[0_0_0_3px_rgba(201,162,39,0.15)] placeholder:text-[#18181B]/40 dark:placeholder:text-[#FFFDF7]/40"
+                  className="w-full pl-10 pr-12 py-2.5 border-2 border-[#18181B]/30 bg-[#FFFDF7] focus:border-[#7F1D1D] focus:shadow-[0_0_0_3px_rgba(127,29,29,0.15)] outline-none text-sm font-medium text-[#18181B] transition-all rounded-lg dark:border-[#FFFDF7]/30 dark:bg-[#18181B] dark:text-[#FFFDF7] dark:focus:border-[#C9A227] dark:focus:shadow-[0_0_0_3px_rgba(201,162,39,0.15)] placeholder:text-[#18181B]/40 dark:placeholder:text-[#FFFDF7]/40"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#18181B]/40 hover:text-[#18181B] dark:text-[#FFFDF7]/40 dark:hover:text-[#FFFDF7] transition-colors focus:outline-none hover-scale-bounce"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full border-4 border-[#18181B] bg-gradient-to-r from-[#7F1D1D] to-[#9B2226] text-[#FFFDF7] font-bold py-3 shadow-[6px_6px_0px_#18181B] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[2px_2px_0px_#18181B] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 dark:border-[#FFFDF7] dark:shadow-[6px_6px_0px_#FFFDF7] dark:hover:shadow-[10px_10px_0px_#FFFDF7] flex items-center justify-center gap-2 mt-2 rounded-lg hover-scale-bounce animate-slide-in-left-delay-3"
+              className="w-full border-4 border-[#18181B] bg-gradient-to-r from-[#7F1D1D] to-[#9B2226] text-[#FFFDF7] font-bold py-3 shadow-[6px_6px_0px_#18181B] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[2px_2px_0px_#18181B] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 dark:border-[#FFFDF7] dark:shadow-[6px_6px_0px_#FFFDF7] dark:hover:shadow-[10px_10px_0px_#FFFDF7] flex items-center justify-center gap-2 mt-2 rounded-lg hover-scale-bounce animate-slide-in-left-delay-3 ripple-button"
             >
               {isLoading ? (
                 <>
@@ -151,7 +164,7 @@ export default function Login() {
 
           {/* Footer */}
           <div className="flex items-center justify-between pt-2 border-t-2 border-[#18181B]/20 dark:border-[#FFFDF7]/20 animate-fade-in-up-delay-4">
-            <p className="text-[10px] font-bold text-[#18181B]/40 dark:text-[#FFFDF7]/40">
+            <p className="text-[10px] font-bold text-[#18181B]/40 dark:text-[#FFFDF7]/40 font-jetbrains">
               Internal System v2.0
             </p>
             <span className="flex items-center gap-1.5 text-[10px] font-bold text-[#18181B]/40 dark:text-[#FFFDF7]/40">

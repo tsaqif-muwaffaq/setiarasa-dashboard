@@ -1,4 +1,6 @@
 @import "@fontsource-variable/geist";
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700;9..40,800&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -36,129 +38,530 @@
   }
 
   .dark {
-    --background: 240 6% 10%;
+    --background: 225 16% 8%;
     --foreground: 45 100% 98%;
 
-    --primary: 163 88% 24%;
+    --primary: 163 88% 28%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 63% 22%;
+    --secondary: 0 45% 27%;
     --secondary-foreground: 45 100% 98%;
 
-    --muted: 240 5% 18%;
-    --muted-foreground: 45 35% 76%;
+    --muted: 224 15% 17%;
+    --muted-foreground: 220 20% 75%;
 
-    --accent: 45 67% 53%;
+    --accent: 45 67% 54%;
     --accent-foreground: 240 6% 10%;
 
-    --destructive: 0 63% 36%;
+    --destructive: 0 50% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 45 67% 53%;
-    --input: 45 67% 53%;
-    --ring: 163 88% 28%;
+    --border: 220 14% 25%;
+    --input: 220 14% 25%;
+    --ring: 45 67% 54%;
 
-    --card: 240 5% 14%;
+    --card: 222 19% 13%;
     --card-foreground: 45 100% 98%;
-    --popover: 240 5% 14%;
+    --popover: 222 19% 13%;
     --popover-foreground: 45 100% 98%;
   }
-}
 
-@layer base {
   * {
     border-color: hsl(var(--border));
+    box-sizing: border-box;
   }
+
   html {
+    min-height: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
     background-color: hsl(var(--background));
   }
-  html,
+
   body,
   #root {
     min-height: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
+
   body {
+    margin: 0;
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-family: var(--font-sans);
+    font-family: "Geist Variable", "DM Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    transition: background-color 0.3s, color 0.3s;
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
+
   ::selection {
     background-color: hsl(var(--accent));
     color: hsl(var(--accent-foreground));
   }
 }
 
-/* ============================================
-   ANIMASI & PATTERN BARU
-   ============================================ */
+@layer utilities {
+  .font-jetbrains {
+    font-family: "JetBrains Mono", monospace;
+  }
 
-/* ── 1. Pattern Background ── */
+  .font-space {
+    font-family: "Space Grotesk", sans-serif;
+  }
+
+  .font-playfair {
+    font-family: "Playfair Display", serif;
+  }
+
+  .font-dm-sans {
+    font-family: "DM Sans", sans-serif;
+  }
+}
+
+/* =========================================================
+   FLOATING SHAPES — Global Decorative Background
+   Used in FloatingShapes.tsx (App.tsx renders it globally)
+   MUST have position:fixed so it doesn't affect document flow!
+   ========================================================= */
+
+.floating-shapes {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.shape {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0.055;
+}
+
+.shape-square {
+  width: 60px;
+  height: 60px;
+  border: 3px solid #18181b;
+  animation: shape-rotate 12s linear infinite;
+}
+
+.shape-square-2 {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #c9a227;
+  animation: shape-rotate 18s linear infinite reverse;
+}
+
+.shape-circle {
+  border-radius: 9999px;
+  border: 3px solid #7f1d1d;
+  animation: shape-pulse 6s ease-in-out infinite;
+}
+
+.shape-circle-2 {
+  border-radius: 9999px;
+  border: 3px solid #065f46;
+  animation: shape-pulse 8s ease-in-out infinite reverse;
+}
+
+.shape-triangle {
+  width: 0;
+  height: 0;
+  border-left: 30px solid transparent;
+  border-right: 30px solid transparent;
+  border-bottom: 52px solid #c9a227;
+  opacity: 0.045;
+  animation: float 8s ease-in-out infinite;
+}
+
+.shape-triangle-2 {
+  width: 0;
+  height: 0;
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+  border-bottom: 34px solid #7f1d1d;
+  opacity: 0.04;
+  animation: float 10s ease-in-out infinite reverse;
+}
+
+.shape-diamond {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #18181b;
+  animation: shape-rotate 14s linear infinite;
+}
+
+.shape-diamond-2 {
+  width: 28px;
+  height: 28px;
+  border: 2px solid #065f46;
+  animation: shape-rotate 20s linear infinite reverse;
+}
+
+.shape-cross {
+  width: 36px;
+  height: 36px;
+  position: absolute;
+  opacity: 0.05;
+}
+
+.shape-cross::before,
+.shape-cross::after {
+  content: "";
+  position: absolute;
+  background: #c9a227;
+}
+
+.shape-cross::before {
+  width: 100%;
+  height: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.shape-cross::after {
+  height: 100%;
+  width: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.shape-hexagon {
+  width: 46px;
+  height: 46px;
+  clip-path: polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0 50%);
+  border: 3px solid #7f1d1d;
+  background: transparent;
+  opacity: 0.05;
+  animation: shape-rotate 16s linear infinite;
+}
+
+/* Hide decorative shapes on very small screens */
+.hidden-mobile {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .hidden-mobile {
+    display: block;
+  }
+}
+
+@keyframes shape-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes shape-pulse {
+  0%, 100% { opacity: 0.04; transform: scale(1); }
+  50%       { opacity: 0.08; transform: scale(1.08); }
+}
+
+/* Global decorative utilities used across pages */
 .bg-pattern {
-  background-image: 
-    radial-gradient(circle at 20% 50%, hsl(var(--accent) / 0.03) 0%, transparent 50%),
-    radial-gradient(circle at 80% 50%, hsl(var(--primary) / 0.03) 0%, transparent 50%),
-    repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 40px,
-      hsl(var(--accent) / 0.02) 40px,
-      hsl(var(--accent) / 0.02) 41px
-    );
+  background-image:
+    radial-gradient(circle at 20% 20%, hsl(var(--accent) / 0.06), transparent 30%),
+    radial-gradient(circle at 80% 10%, hsl(var(--primary) / 0.05), transparent 28%),
+    repeating-linear-gradient(45deg, transparent, transparent 40px, hsl(var(--accent) / 0.025) 40px, hsl(var(--accent) / 0.025) 41px);
 }
 
-.dark .bg-pattern {
-  background-image: 
-    radial-gradient(circle at 20% 50%, hsl(var(--accent) / 0.05) 0%, transparent 50%),
-    radial-gradient(circle at 80% 50%, hsl(var(--primary) / 0.05) 0%, transparent 50%),
-    repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 40px,
-      hsl(var(--accent) / 0.03) 40px,
-      hsl(var(--accent) / 0.03) 41px
-    );
-}
-
-/* ── 2. Pola Diagonal Subtle ── */
 .bg-diagonal-pattern {
-  background-image: repeating-linear-gradient(
-    135deg,
-    transparent,
-    transparent 2px,
-    hsl(var(--accent) / 0.02) 2px,
-    hsl(var(--accent) / 0.02) 4px
-  );
+  background-image: repeating-linear-gradient(135deg, transparent, transparent 8px, hsl(var(--accent) / 0.035) 8px, hsl(var(--accent) / 0.035) 9px);
 }
 
-.dark .bg-diagonal-pattern {
-  background-image: repeating-linear-gradient(
-    135deg,
-    transparent,
-    transparent 2px,
-    hsl(var(--accent) / 0.03) 2px,
-    hsl(var(--accent) / 0.03) 4px
-  );
-}
-
-/* ── 3. Pola Dot Grid ── */
 .bg-dot-grid {
-  background-image: radial-gradient(hsl(var(--accent) / 0.04) 1px, transparent 1px);
+  background-image: radial-gradient(hsl(var(--accent) / 0.08) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
-.dark .bg-dot-grid {
-  background-image: radial-gradient(hsl(var(--accent) / 0.06) 1px, transparent 1px);
+.pattern-header {
+  background-image: linear-gradient(90deg, rgba(201, 162, 39, 0.06) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
-/* ── 4. Animasi Fade In Up ── */
-@keyframes fadeInUp {
+.text-gradient {
+  background: linear-gradient(135deg, #7f1d1d 0%, #c9a227 48%, #065f46 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.decorative-line {
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #c9a227, transparent);
+  animation: line-shimmer 3s ease-in-out infinite;
+}
+
+.card-lift,
+.card-lift-premium,
+.hover-scale-bounce {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.card-lift:hover,
+.card-lift-premium:hover,
+.hover-scale-bounce:hover {
+  transform: translateY(-2px);
+}
+
+.card-lift:active,
+.card-lift-premium:active,
+.hover-scale-bounce:active {
+  transform: translateY(1px);
+}
+
+.border-glow-animated {
+  animation: border-glow-pulse 3s ease-in-out infinite;
+}
+
+.corner-accent,
+.corner-accent-animated {
+  position: relative;
+}
+
+.corner-accent::before,
+.corner-accent::after,
+.corner-accent-animated::before,
+.corner-accent-animated::after {
+  content: "";
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  pointer-events: none;
+  border-color: #c9a227;
+  opacity: 0.45;
+}
+
+.corner-accent::before,
+.corner-accent-animated::before {
+  top: -3px;
+  left: -3px;
+  border-top: 3px solid;
+  border-left: 3px solid;
+}
+
+.corner-accent::after,
+.corner-accent-animated::after {
+  right: -3px;
+  bottom: -3px;
+  border-right: 3px solid;
+  border-bottom: 3px solid;
+}
+
+.table-row-hover-animated {
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.table-row-hover-animated:hover {
+  transform: translateX(2px);
+}
+
+.avatar-glow {
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.12);
+}
+
+.floating-dot {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+.ripple-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-button .ripple {
+  position: absolute;
+  border-radius: 9999px;
+  background: rgba(255, 253, 247, 0.3);
+  pointer-events: none;
+  transform: scale(0);
+  animation: ripple 0.6s linear;
+}
+
+.shape-hexagon,
+.polygon-animated {
+  clip-path: polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0 50%);
+}
+
+.shape-diamond {
+  transform: rotate(45deg);
+}
+
+.shape-diamond > *,
+.shape-diamond svg {
+  transform: rotate(-45deg);
+}
+
+.shape-cross {
+  position: relative;
+}
+
+.shape-cross::before,
+.shape-cross::after {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 60%;
+  height: 2px;
+  background: currentColor;
+  opacity: 0.18;
+  transform: translate(-50%, -50%);
+}
+
+.shape-cross::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.shape-triangle {
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+/* Keyframe: float tipis untuk icon container (bukan rotating) */
+@keyframes icon-float-subtle {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-3px); }
+}
+
+/* Diamond tetap rotate 45deg tapi float atas-bawah, tidak spinning */
+@keyframes icon-float-diamond {
+  0%, 100% { transform: rotate(45deg) translateY(0); }
+  50%       { transform: rotate(45deg) translateY(-3px); }
+}
+
+.shape-hexagon:not(.shape) {
+  border: 2px solid #18181B;
+  background-color: #C9A227;
+  opacity: 1;
+  animation: icon-float-subtle 4s ease-in-out infinite;
+  box-shadow: none;
+  filter: drop-shadow(3px 3px 0 #18181B);
+}
+
+.dark .shape-hexagon:not(.shape) {
+  border-color: #FFFDF7;
+  background-color: #d8b13d;
+  filter: drop-shadow(3px 3px 0 #080a0f);
+}
+
+/* polygon-animated (metric cards dashboard) — clip-path hexagon + float */
+.polygon-animated {
+  animation: icon-float-subtle 4s ease-in-out infinite;
+  box-shadow: none;
+  filter: drop-shadow(3px 3px 0 #18181B);
+}
+
+.dark .polygon-animated {
+  filter: drop-shadow(3px 3px 0 #080a0f);
+}
+
+/* shape-diamond icon containers: ganti spin → float atas-bawah */
+.shape-diamond:not(.shape) {
+  animation: icon-float-diamond 4s ease-in-out infinite;
+  box-shadow: none;
+  filter: drop-shadow(3px 3px 0 #18181B);
+}
+
+.dark .shape-diamond:not(.shape) {
+  filter: drop-shadow(3px 3px 0 #080a0f);
+}
+
+.shape-cross:not(.shape) {
+  opacity: 1;
+  position: relative;
+  animation: icon-float-subtle 4s ease-in-out infinite;
+  box-shadow: none;
+  filter: drop-shadow(3px 3px 0 #18181B);
+}
+
+.dark .shape-cross:not(.shape) {
+  filter: drop-shadow(3px 3px 0 #080a0f);
+}
+
+.shape-triangle:not(.shape) {
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  opacity: 1;
+  animation: icon-float-diamond 4s ease-in-out infinite;
+}
+
+.animate-fade-in-up,
+.animate-fade-in-up-delay-1,
+.animate-fade-in-up-delay-2,
+.animate-fade-in-up-delay-3,
+.animate-fade-in-up-delay-4,
+.animate-fade-in-up-delay-5,
+.animate-fade-in-up-delay-6 {
+  opacity: 0;
+  animation: fade-in-up 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in-up-delay-1 { animation-delay: 0.08s; }
+.animate-fade-in-up-delay-2 { animation-delay: 0.16s; }
+.animate-fade-in-up-delay-3 { animation-delay: 0.24s; }
+.animate-fade-in-up-delay-4 { animation-delay: 0.32s; }
+.animate-fade-in-up-delay-5 { animation-delay: 0.40s; }
+.animate-fade-in-up-delay-6 { animation-delay: 0.48s; }
+
+.animate-slide-left-1,
+.animate-slide-left-2,
+.animate-slide-left-3,
+.animate-slide-in-left-delay-3 {
+  opacity: 0;
+  animation: slide-left 0.45s ease forwards;
+}
+
+.animate-slide-left-2 { animation-delay: 0.08s; }
+.animate-slide-left-3,
+.animate-slide-in-left-delay-3 { animation-delay: 0.16s; }
+
+.animate-float,
+.animate-float-delay-1,
+.animate-float-delay-2 {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-float-delay-1 { animation-delay: 0.5s; }
+.animate-float-delay-2 { animation-delay: 1s; }
+
+.animate-pulse-soft,
+.animate-pulse-soft-premium {
+  animation: pulse-soft 2.4s ease-in-out infinite;
+}
+
+.typing-text {
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 2px solid #c9a227;
+  animation: typing 3s steps(32, end) infinite, caret 0.75s step-end infinite;
+}
+
+#custom-cursor {
+  position: fixed;
+  z-index: 99999;
+  pointer-events: none;
+  mix-blend-mode: difference;
+}
+
+#custom-cursor .cursor-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: #c9a227;
+}
+
+#custom-cursor .cursor-ring {
+  width: 32px;
+  height: 32px;
+  border: 2px solid #c9a227;
+  border-radius: 9999px;
+}
+
+@keyframes fade-in-up {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -166,192 +569,10 @@
   }
 }
 
-.animate-fade-in-up {
-  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-fade-in-up-delay-1 {
-  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
-  opacity: 0;
-}
-
-.animate-fade-in-up-delay-2 {
-  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
-  opacity: 0;
-}
-
-.animate-fade-in-up-delay-3 {
-  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
-  opacity: 0;
-}
-
-.animate-fade-in-up-delay-4 {
-  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
-  opacity: 0;
-}
-
-/* ── 5. Animasi Float ── */
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
-}
-
-.animate-float {
-  animation: float 4s ease-in-out infinite;
-}
-
-.animate-float-delay-1 {
-  animation: float 4s ease-in-out 0.5s infinite;
-}
-
-.animate-float-delay-2 {
-  animation: float 4s ease-in-out 1s infinite;
-}
-
-/* ── 6. Animasi Pulse Soft ── */
-@keyframes pulseSoft {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
-  }
-}
-
-.animate-pulse-soft {
-  animation: pulseSoft 3s ease-in-out infinite;
-}
-
-/* ── 7. Animasi Shimmer ── */
-@keyframes shimmer {
-  0% {
-    background-position: -200% center;
-  }
-  100% {
-    background-position: 200% center;
-  }
-}
-
-.animate-shimmer {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    hsl(var(--accent) / 0.05) 25%,
-    hsl(var(--accent) / 0.10) 50%,
-    hsl(var(--accent) / 0.05) 75%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 4s ease-in-out infinite;
-}
-
-/* ── 8. Glow Effect on Hover ── */
-.hover-glow {
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
-}
-
-.hover-glow:hover {
-  box-shadow: 0 0 40px hsl(var(--accent) / 0.10), 6px 6px 0px hsl(var(--border));
-  transform: translateY(-2px);
-}
-
-.dark .hover-glow:hover {
-  box-shadow: 0 0 40px hsl(var(--accent) / 0.15), 6px 6px 0px hsl(var(--border));
-}
-
-/* ── 9. Corner Accent ── */
-.corner-accent {
-  position: relative;
-}
-
-.corner-accent::before {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  width: 40px;
-  height: 40px;
-  border-top: 4px solid hsl(var(--accent));
-  border-left: 4px solid hsl(var(--accent));
-  opacity: 0.4;
-  transition: opacity 0.3s ease, width 0.3s ease, height 0.3s ease;
-}
-
-.corner-accent:hover::before {
-  opacity: 0.8;
-  width: 60px;
-  height: 60px;
-}
-
-.corner-accent::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  right: -2px;
-  width: 40px;
-  height: 40px;
-  border-bottom: 4px solid hsl(var(--accent));
-  border-right: 4px solid hsl(var(--accent));
-  opacity: 0.4;
-  transition: opacity 0.3s ease, width 0.3s ease, height 0.3s ease;
-}
-
-.corner-accent:hover::after {
-  opacity: 0.8;
-  width: 60px;
-  height: 60px;
-}
-
-/* ── 10. Border Gradient Animasi ── */
-@keyframes borderGlow {
-  0%, 100% {
-    border-color: hsl(var(--border));
-  }
-  50% {
-    border-color: hsl(var(--accent));
-  }
-}
-
-.animate-border-glow {
-  animation: borderGlow 3s ease-in-out infinite;
-}
-
-/* ── 11. Rotating Ring ── */
-@keyframes spinRing {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin-ring {
-  animation: spinRing 8s linear infinite;
-}
-
-/* ── 12. Scale Bounce on Hover ── */
-.hover-scale-bounce {
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.hover-scale-bounce:hover {
-  transform: scale(1.05);
-}
-
-.hover-scale-bounce:active {
-  transform: scale(0.95);
-}
-
-/* ── 13. Slide In From Side ── */
-@keyframes slideInLeft {
+@keyframes slide-left {
   from {
     opacity: 0;
-    transform: translateX(-20px);
+    transform: translateX(18px);
   }
   to {
     opacity: 1;
@@ -359,1410 +580,738 @@
   }
 }
 
-.animate-slide-in-left {
-  animation: slideInLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 
-.animate-slide-in-left-delay-1 {
-  animation: slideInLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.58; }
+}
+
+@keyframes border-glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(201, 162, 39, 0); }
+  50% { box-shadow: 0 0 24px rgba(201, 162, 39, 0.12); }
+}
+
+@keyframes line-shimmer {
+  0%, 100% { opacity: 0.45; transform: scaleX(0.65); }
+  50% { opacity: 1; transform: scaleX(1); }
+}
+
+@keyframes ripple {
+  to {
+    opacity: 0;
+    transform: scale(4);
+  }
+}
+
+@keyframes typing {
+  0%, 100% { width: 0; }
+  50% { width: 100%; }
+}
+
+@keyframes caret {
+  0%, 100% { border-color: transparent; }
+  50% { border-color: #c9a227; }
+}
+
+@keyframes slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-right {
   opacity: 0;
+  animation: slide-right 0.45s ease forwards;
 }
 
-/* ── 14. Grain Texture ── */
-.bg-grain {
-  position: relative;
-}
+/* =========================================================
+   BACKGROUND OVERLAYS — used in App.tsx globally
+   ========================================================= */
 
-.bg-grain::before {
-  content: '';
-  position: absolute;
+.animated-grid-overlay {
+  position: fixed;
   inset: 0;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 256px 256px;
   pointer-events: none;
   z-index: 0;
+  background-image:
+    linear-gradient(rgba(24, 24, 27, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(24, 24, 27, 0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: grid-slide 20s linear infinite;
 }
 
-.dark .bg-grain::before {
-  opacity: 0.05;
+.dark .animated-grid-overlay {
+  background-image:
+    linear-gradient(rgba(255, 253, 247, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 253, 247, 0.04) 1px, transparent 1px);
 }
 
-/* ── 15. Card Hover Lift ── */
-.card-lift {
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+@keyframes grid-slide {
+  0% { background-position: 0 0; }
+  100% { background-position: 60px 60px; }
 }
 
-.card-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: 8px 8px 0px hsl(var(--border));
+.animated-dots-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: radial-gradient(circle, rgba(24, 24, 27, 0.05) 1.5px, transparent 1.5px);
+  background-size: 40px 40px;
+  animation: dots-drift 18s ease-in-out infinite;
 }
 
-.dark .card-lift:hover {
-  box-shadow: 8px 8px 0px hsl(var(--border));
+.dark .animated-dots-overlay {
+  background-image: radial-gradient(circle, rgba(255, 253, 247, 0.06) 1.5px, transparent 1.5px);
 }
 
-/* ============================================
-   PERBAIKAN TEMA GELAP
-   ============================================ */
-
-/* ... (kode tema gelap sebelumnya tetap sama) ... */
-
-/* Background dengan gradasi halus untuk dark mode */
-.dark .bg-background {
-  background: linear-gradient(
-    180deg,
-    hsl(240, 6%, 8%) 0%,
-    hsl(240, 6%, 10%) 50%,
-    hsl(240, 6%, 6%) 100%
-  );
-}
-
-/* Card dengan gradasi lebih dalam di dark mode */
-.dark .bg-\[var\(--card\)\] {
-  background: linear-gradient(
-    145deg,
-    hsl(240, 5%, 12%) 0%,
-    hsl(240, 5%, 16%) 50%,
-    hsl(240, 5%, 10%) 100%
-  );
-}
-
-/* Perbaikan warna teks di dark mode */
-.dark .text-\[\#18181B\] {
-  color: hsl(45, 100%, 95%) !important;
-}
-
-.dark .text-\[\#18181B\]\/70 {
-  color: hsl(45, 100%, 85%) !important;
-}
-
-.dark .text-\[\#18181B\]\/50 {
-  color: hsl(45, 100%, 75%) !important;
-}
-
-.dark .text-\[\#18181B\]\/40 {
-  color: hsl(45, 100%, 65%) !important;
-}
-
-.dark .text-\[\#18181B\]\/30 {
-  color: hsl(45, 100%, 55%) !important;
-}
-
-.dark .text-\[\#18181B\]\/20 {
-  color: hsl(45, 100%, 40%) !important;
-}
-
-/* Perbaikan warna border di dark mode */
-.dark .border-\[\#18181B\] {
-  border-color: hsl(45, 67%, 35%) !important;
-}
-
-.dark .border-\[\#18181B\]\/20 {
-  border-color: hsla(45, 67%, 45%, 0.15) !important;
-}
-
-.dark .border-\[\#18181B\]\/10 {
-  border-color: hsla(45, 67%, 45%, 0.08) !important;
-}
-
-.dark .border-2.border-\[\#18181B\] {
-  border-color: hsl(45, 67%, 35%) !important;
-}
-
-.dark .border-4.border-\[\#18181B\] {
-  border-color: hsl(45, 67%, 35%) !important;
-}
-
-/* Shadow yang lebih soft di dark mode */
-.dark .shadow-\[6px_6px_0px_\#18181B\] {
-  box-shadow: 6px 6px 0px hsl(45, 67%, 25%) !important;
-}
-
-.dark .shadow-\[12px_12px_0px_\#18181B\] {
-  box-shadow: 12px 12px 0px hsl(45, 67%, 20%) !important;
-}
-
-.dark .shadow-\[4px_4px_0px_\#18181B\] {
-  box-shadow: 4px 4px 0px hsl(45, 67%, 25%) !important;
-}
-
-.dark .shadow-\[3px_3px_0px_\#18181B\] {
-  box-shadow: 3px 3px 0px hsl(45, 67%, 25%) !important;
-}
-
-.dark .shadow-\[2px_2px_0px_\#18181B\] {
-  box-shadow: 2px 2px 0px hsl(45, 67%, 25%) !important;
-}
-
-/* Perbaikan background cards di dark mode */
-.dark .bg-\[\#FFFDF7\] {
-  background: linear-gradient(
-    145deg,
-    hsl(240, 5%, 10%) 0%,
-    hsl(240, 5%, 14%) 50%,
-    hsl(240, 5%, 8%) 100%
-  ) !important;
-}
-
-.dark .bg-\[\#E7D9B8\] {
-  background: linear-gradient(
-    145deg,
-    hsl(45, 20%, 15%) 0%,
-    hsl(45, 20%, 20%) 50%,
-    hsl(45, 20%, 12%) 100%
-  ) !important;
-}
-
-/* Perbaikan warna accent di dark mode */
-.dark .bg-\[\#C9A227\] {
-  background: linear-gradient(
-    145deg,
-    hsl(45, 67%, 40%) 0%,
-    hsl(45, 67%, 35%) 50%,
-    hsl(45, 67%, 45%) 100%
-  ) !important;
-}
-
-.dark .bg-\[\#C9A227\]\/10 {
-  background: hsla(45, 67%, 50%, 0.08) !important;
-}
-
-.dark .bg-\[\#C9A227\]\/20 {
-  background: hsla(45, 67%, 50%, 0.15) !important;
-}
-
-.dark .text-\[\#C9A227\] {
-  color: hsl(45, 67%, 55%) !important;
-}
-
-/* Perbaikan warna primary (hijau) di dark mode */
-.dark .bg-\[\#065F46\] {
-  background: linear-gradient(
-    145deg,
-    hsl(163, 88%, 20%) 0%,
-    hsl(163, 88%, 15%) 50%,
-    hsl(163, 88%, 25%) 100%
-  ) !important;
-}
-
-.dark .bg-\[\#065F46\]\/10 {
-  background: hsla(163, 88%, 30%, 0.10) !important;
-}
-
-.dark .bg-\[\#065F46\]\/30 {
-  background: hsla(163, 88%, 30%, 0.25) !important;
-}
-
-.dark .text-\[\#065F46\] {
-  color: hsl(163, 88%, 45%) !important;
-}
-
-.dark .text-\[\#34D399\] {
-  color: hsl(163, 88%, 55%) !important;
-}
-
-/* Perbaikan warna destructive (merah) di dark mode */
-.dark .bg-\[\#7F1D1D\] {
-  background: linear-gradient(
-    145deg,
-    hsl(0, 63%, 22%) 0%,
-    hsl(0, 63%, 16%) 50%,
-    hsl(0, 63%, 28%) 100%
-  ) !important;
-}
-
-.dark .bg-\[\#7F1D1D\]\/10 {
-  background: hsla(0, 63%, 30%, 0.10) !important;
-}
-
-.dark .bg-\[\#7F1D1D\]\/30 {
-  background: hsla(0, 63%, 30%, 0.25) !important;
-}
-
-.dark .text-\[\#7F1D1D\] {
-  color: hsl(0, 63%, 55%) !important;
-}
-
-/* Perbaikan input di dark mode */
-.dark input,
-.dark select,
-.dark textarea {
-  background: linear-gradient(
-    145deg,
-    hsl(240, 5%, 8%) 0%,
-    hsl(240, 5%, 12%) 100%
-  ) !important;
-  border-color: hsl(45, 67%, 30%) !important;
-  color: hsl(45, 100%, 95%) !important;
-}
-
-.dark input:focus,
-.dark select:focus,
-.dark textarea:focus {
-  border-color: hsl(45, 67%, 50%) !important;
-  box-shadow: 0 0 20px hsla(45, 67%, 50%, 0.1) !important;
-}
-
-.dark input::placeholder,
-.dark textarea::placeholder {
-  color: hsl(45, 100%, 65%) !important;
-}
-
-/* Hover effects untuk dark mode */
-.dark .hover\:bg-\[\#C9A227\]\/20:hover {
-  background-color: hsla(45, 67%, 50%, 0.12) !important;
-}
-
-.dark .hover\:bg-\[\#C9A227\]\/10:hover {
-  background-color: hsla(45, 67%, 50%, 0.06) !important;
-}
-
-.dark .hover\:bg-\[\#FFFDF7\]:hover {
-  background: linear-gradient(
-    145deg,
-    hsl(240, 5%, 14%) 0%,
-    hsl(240, 5%, 18%) 50%,
-    hsl(240, 5%, 12%) 100%
-  ) !important;
-}
-
-.dark .hover\:text-\[\#FFFDF7\]:hover {
-  color: hsl(45, 100%, 98%) !important;
-}
-
-/* Scrollbar untuk dark mode */
-.dark ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.dark ::-webkit-scrollbar-track {
-  background: hsl(240, 5%, 10%);
-  border-radius: 4px;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    hsl(45, 67%, 30%) 0%,
-    hsl(45, 67%, 20%) 100%
-  );
-  border-radius: 4px;
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(
-    180deg,
-    hsl(45, 67%, 40%) 0%,
-    hsl(45, 67%, 30%) 100%
-  );
-}
-
-/* Perbaikan untuk tabel di dark mode */
-.dark .border-b-2.border-\[\#18181B\] {
-  border-bottom-color: hsl(45, 67%, 30%) !important;
-}
-
-.dark .border-b-2.border-\[\#18181B\]\/20 {
-  border-bottom-color: hsla(45, 67%, 45%, 0.10) !important;
-}
-
-.dark .border-t-2.border-\[\#18181B\] {
-  border-top-color: hsl(45, 67%, 30%) !important;
-}
-
-/* Perbaikan untuk badge di dark mode */
-.dark .border-\[\#18181B\]\/20 {
-  border-color: hsla(45, 67%, 45%, 0.15) !important;
-}
-
-/* Efek hover shadow untuk dark mode */
-.dark .hover\:shadow-\[10px_10px_0px_\#18181B\]:hover {
-  box-shadow: 10px 10px 0px hsl(45, 67%, 20%) !important;
-}
-
-.dark .hover\:shadow-\[8px_8px_0px_\#18181B\]:hover {
-  box-shadow: 8px 8px 0px hsl(45, 67%, 20%) !important;
-}
-
-/* Perbaikan untuk teks muted di dark mode */
-.dark .text-\[\#18181B\]\/70 {
-  color: hsl(45, 100%, 85%) !important;
-}
-
-.dark .text-\[\#18181B\]\/50 {
-  color: hsl(45, 100%, 75%) !important;
-}
-
-.dark .text-\[\#18181B\]\/30 {
-  color: hsl(45, 100%, 60%) !important;
-}
-
-/* Efek glow untuk elemen aktif di dark mode */
-.dark .border-2.border-\[\#18181B\].bg-\[\#C9A227\] {
-  background: linear-gradient(
-    145deg,
-    hsl(45, 67%, 45%) 0%,
-    hsl(45, 67%, 38%) 50%,
-    hsl(45, 67%, 50%) 100%
-  ) !important;
-  box-shadow: 
-    4px 4px 0px hsl(45, 67%, 25%),
-    0 0 30px hsla(45, 67%, 50%, 0.1) !important;
-}
-
-/* Animasi tambahan untuk dark mode */
-@keyframes glowPulse {
-  0% { opacity: 0.6; }
-  50% { opacity: 1; }
-  100% { opacity: 0.6; }
-}
-
-.dark .animate-glow {
-  animation: glowPulse 2s ease-in-out infinite;
-}
-
-/* ============================================
-   PERBAIKAN CHART / GRAFIK DI DARK MODE
-   ============================================ */
-
-/* Perbaikan untuk Recharts di dark mode */
-.dark .recharts-cartesian-axis-tick-value,
-.dark .recharts-cartesian-axis-tick text,
-.dark .recharts-text {
-  fill: hsl(45, 100%, 90%) !important;
-}
-
-.dark .recharts-cartesian-axis-line {
-  stroke: hsl(45, 67%, 30%) !important;
-}
-
-.dark .recharts-cartesian-grid-horizontal line,
-.dark .recharts-cartesian-grid-vertical line {
-  stroke: hsla(45, 67%, 45%, 0.15) !important;
-}
-
-.dark .recharts-tooltip-wrapper {
-  background: hsl(240, 5%, 12%) !important;
-  border: 2px solid hsl(45, 67%, 35%) !important;
-  border-radius: 0px !important;
-  box-shadow: 6px 6px 0px hsl(45, 67%, 25%) !important;
-}
-
-.dark .recharts-tooltip-wrapper .recharts-tooltip-label {
-  color: hsl(45, 100%, 90%) !important;
-  font-weight: bold !important;
-}
-
-.dark .recharts-tooltip-wrapper .recharts-tooltip-item {
-  color: hsl(45, 100%, 85%) !important;
-}
-
-.dark .recharts-tooltip-wrapper .recharts-tooltip-item-name {
-  color: hsl(45, 100%, 75%) !important;
-}
-
-.dark .recharts-tooltip-wrapper .recharts-tooltip-item-value {
-  color: hsl(45, 67%, 55%) !important;
-  font-weight: bold !important;
-}
-
-/* Perbaikan untuk legend di dark mode */
-.dark .recharts-legend-item-text {
-  color: hsl(45, 100%, 85%) !important;
-}
-
-/* Perbaikan untuk label di dalam chart */
-.dark .recharts-label {
-  fill: hsl(45, 100%, 90%) !important;
-}
-
-/* Perbaikan untuk bar chart */
-.dark .recharts-bar-rectangle {
-  filter: drop-shadow(0 2px 8px hsla(0, 63%, 30%, 0.3));
-}
-
-/* Perbaikan untuk line chart */
-.dark .recharts-line-curve {
-  filter: drop-shadow(0 2px 8px hsla(0, 63%, 30%, 0.2));
-}
-
-.dark .recharts-line-dot {
-  stroke: hsl(45, 100%, 95%) !important;
-  fill: hsl(240, 5%, 12%) !important;
-}
-
-.dark .recharts-line-active-dot {
-  stroke: hsl(45, 67%, 55%) !important;
-  fill: hsl(45, 67%, 55%) !important;
-}
-
-/* Perbaikan untuk XAxis dan YAxis di dark mode */
-.dark .recharts-xAxis .recharts-cartesian-axis-tick-value,
-.dark .recharts-yAxis .recharts-cartesian-axis-tick-value {
-  fill: hsl(45, 100%, 85%) !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
-}
-
-/* Perbaikan untuk axis line dan ticks */
-.dark .recharts-xAxis .recharts-cartesian-axis-line,
-.dark .recharts-yAxis .recharts-cartesian-axis-line {
-  stroke: hsl(45, 67%, 30%) !important;
-}
-
-.dark .recharts-xAxis .recharts-cartesian-axis-tick-line,
-.dark .recharts-yAxis .recharts-cartesian-axis-tick-line {
-  stroke: hsl(45, 67%, 30%) !important;
-}
-
-/* Tooltip dengan style neubrutalism di dark mode */
-.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
-  background: hsl(240, 5%, 12%) !important;
-  border: 3px solid hsl(45, 67%, 35%) !important;
-  border-radius: 0px !important;
-  padding: 12px !important;
-  box-shadow: 6px 6px 0px hsl(45, 67%, 25%) !important;
-}
-
-.dark .recharts-tooltip-wrapper .recharts-tooltip-label {
-  color: hsl(45, 100%, 95%) !important;
-  font-weight: 900 !important;
-  font-size: 12px !important;
-  margin-bottom: 4px !important;
-}
-
-.dark .recharts-tooltip-wrapper .recharts-tooltip-item {
-  color: hsl(45, 100%, 85%) !important;
-  font-weight: 700 !important;
-  font-size: 11px !important;
-  padding: 2px 0 !important;
-}
-
-/* Perbaikan untuk custom cursor di chart */
-.dark .recharts-cartesian-axis-cursor {
-  stroke: hsla(45, 67%, 45%, 0.3) !important;
+@keyframes dots-drift {
+  0%, 100% { background-position: 0 0; }
+  25% { background-position: 20px -20px; }
+  50% { background-position: -15px 15px; }
+  75% { background-position: 10px -10px; }
 }
 
-/* Tambahan untuk memastikan angka di chart terbaca */
-@media (prefers-color-scheme: dark) {
-  .recharts-cartesian-axis-tick-value,
-  .recharts-cartesian-axis-tick text,
-  .recharts-text {
-    fill: #e8e0d0 !important;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
-/* ============================================
-   PERBAIKAN FONT & TYPOGRAPHY PROFESIONAL
-   ============================================ */
-
-/* Ukuran font lebih hierarkis */
-h1 {
-  font-size: 1.875rem;
-  line-height: 2.25rem;
-  font-weight: 900;
-  letter-spacing: -0.025em;
-}
-
-h2 {
-  font-size: 1.5rem;
-  line-height: 2rem;
-  font-weight: 900;
-  letter-spacing: -0.025em;
-}
-
-h3 {
-  font-size: 1.25rem;
-  line-height: 1.75rem;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-}
-
-h4 {
-  font-size: 1.125rem;
-  line-height: 1.75rem;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-}
-
-/* Warna heading yang lebih jelas di dark mode */
-.dark h1,
-.dark h2,
-.dark h3,
-.dark h4 {
-  color: #FFFDF7;
-}
-
-/* Teks body lebih enak dibaca */
-body {
-  font-size: 0.875rem;
-  line-height: 1.625;
-}
-
-/* ============================================
-   PERBAIKAN WARNA ELEMEN DI LIGHT & DARK MODE
-   ============================================ */
-
-/* Warna accent emas yang lebih profesional */
-.bg-accent-gold {
-  background: linear-gradient(145deg, #D4AF37, #C9A227, #B8961F);
-}
-
-.dark .bg-accent-gold {
-  background: linear-gradient(145deg, #D4AF37, #C9A227, #B8961F);
-}
-
-/* Warna primary hijau yang lebih profesional */
-.bg-primary-green {
-  background: linear-gradient(145deg, #0A7A5C, #065F46, #044A34);
-}
-
-.dark .bg-primary-green {
-  background: linear-gradient(145deg, #0A7A5C, #065F46, #044A34);
-}
-
-/* Warna destructive merah yang lebih profesional */
-.bg-destructive-red {
-  background: linear-gradient(145deg, #9B2226, #7F1D1D, #661818);
-}
-
-.dark .bg-destructive-red {
-  background: linear-gradient(145deg, #9B2226, #7F1D1D, #661818);
-}
-
-/* Warna card background yang lebih bersih */
-.bg-card-clean {
-  background-color: #FFFDF7;
-}
-
-.dark .bg-card-clean {
-  background-color: #1A1A1E;
-}
-
-/* Border yang lebih halus */
-.border-soft {
-  border-color: rgba(24, 24, 27, 0.2);
-}
-
-.dark .border-soft {
-  border-color: rgba(255, 253, 247, 0.2);
-}
-
-/* ============================================
-   PERBAIKAN LAYOUT & SPACING
-   ============================================ */
-
-/* Container yang lebih rapi */
-.container-nice {
-  max-width: 80rem;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-@media (min-width: 640px) {
-  .container-nice {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .container-nice {
-    padding-left: 2rem;
-    padding-right: 2rem;
-  }
-}
-
-/* Card spacing yang lebih baik */
-.card-nice {
-  padding: 1rem;
-}
-
-@media (min-width: 640px) {
-  .card-nice {
-    padding: 1.5rem;
-  }
-}
-
-/* ============================================
-   DARK MODE PROFESIONAL - CLEAN VERSION
-   Gabungan semua permintaan dalam 1 blok
-   ============================================ */
-
-/* Warna merah brick - SAMA DENGAN GRAFIK */
-:root {
-  --red-brick: #8B3A3A;
-  --red-brick-light: #9A4A4A;
-  --red-brick-dark: #6A2A2A;
-  --red-brick-bg: rgba(139, 58, 58, 0.15);
-  --red-icon-bright: #7A3535;
-  --red-icon-hover: #8A4040;
-}
-
-/* ============================================
-   1. BACKGROUND & CARD - DARK GRAY
-   ============================================ */
+/* =========================================================
+   DARK MODE OVERRIDES FOR HARDCODED TAILWIND COLORS
+   Keep this section after @tailwind utilities.
+   ========================================================= */
 
 .dark {
-  --background: 220 15% 14%;
-  --foreground: 220 15% 92%;
-  --primary: 160 60% 28%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 220 15% 18%;
-  --secondary-foreground: 220 15% 92%;
-  --muted: 220 12% 22%;
-  --muted-foreground: 220 10% 70%;
-  --accent: 40 30% 45%;
-  --accent-foreground: 220 15% 95%;
-  --destructive: 0 45% 38%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 220 12% 26%;
-  --input: 220 12% 26%;
-  --ring: 160 60% 38%;
-  --card: 220 15% 17%;
-  --card-foreground: 220 15% 92%;
-  --popover: 220 15% 17%;
-  --popover-foreground: 220 15% 92%;
+  color-scheme: dark;
+  --sr-dark-page: #111318;
+  --sr-dark-surface: #1a1e26;
+  --sr-dark-surface-2: #232833;
+  --sr-dark-muted-surface: #2a303d;
+  --sr-dark-border: #2d3440;
+  --sr-dark-border-soft: rgba(176, 184, 200, 0.22);
+  --sr-dark-shadow: #080a0f;
+  --sr-dark-text: #e8edf5;
+  --sr-dark-text-strong: #fffdf7;
+  --sr-dark-text-soft: #b0b8c8;
+  --sr-dark-text-faint: #8892a8;
+  --sr-dark-red: #d68a8a;
+  --sr-dark-red-bg: #8f3333;
+  --sr-dark-red-soft: rgba(143, 51, 51, 0.24);
+  --sr-dark-gold: #e8c84a;
+  --sr-dark-gold-bg: #d8b13d;
+  --sr-dark-gold-soft: rgba(232, 200, 74, 0.18);
+  --sr-dark-green: #4cd4a0;
+  --sr-dark-green-bg: #15875f;
+  --sr-dark-green-soft: rgba(21, 135, 95, 0.22);
+  --sr-dark-blue: #72aaff;
+  --sr-dark-orange: #ff9f78;
+  --sr-dark-purple: #c99cff;
 }
 
-.dark body,
-.dark .bg-background,
-.dark .bg-\[\#FFFDF7\] {
-  background: #1a1e26 !important;
+html.dark,
+html.dark body,
+html.dark #root {
+  background-color: var(--sr-dark-page) !important;
+  color: var(--sr-dark-text) !important;
 }
 
 .dark .bg-\[\#FFFDF7\],
-.dark .bg-\[var\(--card\)\],
-.dark .bg-card-clean {
-  background: #232833 !important;
+.dark [class~="bg-[#FFFDF7]"],
+.dark [class~="dark:bg-[#FFFDF7]"] {
+  background: var(--sr-dark-surface) !important;
 }
 
-.dark .bg-\[\#E7D9B8\] {
-  background: #2a303d !important;
+.dark .bg-\[\#FFFDF7\]\/95,
+.dark [class~="bg-[#FFFDF7]/95"] {
+  background: rgba(26, 30, 38, 0.95) !important;
 }
 
-/* ============================================
-   2. BORDER & SHADOW
-   ============================================ */
+.dark .bg-\[\#FFFDF7\]\/80,
+.dark [class~="bg-[#FFFDF7]/80"] {
+  background: rgba(26, 30, 38, 0.8) !important;
+}
+
+.dark .bg-\[\#18181B\],
+.dark [class~="bg-[#18181B]"],
+.dark [class~="dark:bg-[#18181B]"] {
+  background: var(--sr-dark-page) !important;
+}
+
+.dark .bg-\[\#18181B\]\/95,
+.dark [class~="bg-[#18181B]/95"] {
+  background: rgba(17, 19, 24, 0.95) !important;
+}
+
+.dark .bg-\[\#18181B\]\/80,
+.dark [class~="bg-[#18181B]/80"] {
+  background: rgba(17, 19, 24, 0.84) !important;
+}
+
+.dark .bg-\[\#E7D9B8\],
+.dark [class~="bg-[#E7D9B8]"],
+.dark [class~="dark:bg-[#E7D9B8]"] {
+  background: var(--sr-dark-muted-surface) !important;
+}
+
+.dark .bg-\[\#7F1D1D\],
+.dark [class~="bg-[#7F1D1D]"],
+.dark [class~="dark:bg-[#7F1D1D]"],
+.dark aside.bg-\[\#7F1D1D\],
+.dark aside[class~="bg-[#7F1D1D]"] {
+  background: var(--sr-dark-red-bg) !important;
+}
+
+.dark .bg-\[\#7F1D1D\]\/30,
+.dark .bg-\[\#7F1D1D\]\/20,
+.dark .bg-\[\#7F1D1D\]\/10,
+.dark .bg-\[\#7F1D1D\]\/5,
+.dark [class~="bg-[#7F1D1D]/30"],
+.dark [class~="bg-[#7F1D1D]/20"],
+.dark [class~="bg-[#7F1D1D]/10"],
+.dark [class~="bg-[#7F1D1D]/5"],
+.dark [class~="dark:bg-[#7F1D1D]/30"],
+.dark [class~="dark:bg-[#7F1D1D]/20"],
+.dark [class~="dark:bg-[#7F1D1D]/10"],
+.dark [class~="dark:bg-[#7F1D1D]/5"] {
+  background: var(--sr-dark-red-soft) !important;
+}
+
+.dark .bg-\[\#C9A227\],
+.dark [class~="bg-[#C9A227]"],
+.dark [class~="dark:bg-[#C9A227]"] {
+  background: var(--sr-dark-gold-bg) !important;
+}
+
+.dark .bg-\[\#C9A227\]\/30,
+.dark .bg-\[\#C9A227\]\/20,
+.dark .bg-\[\#C9A227\]\/15,
+.dark .bg-\[\#C9A227\]\/10,
+.dark .bg-\[\#C9A227\]\/5,
+.dark [class~="bg-[#C9A227]/30"],
+.dark [class~="bg-[#C9A227]/20"],
+.dark [class~="bg-[#C9A227]/15"],
+.dark [class~="bg-[#C9A227]/10"],
+.dark [class~="bg-[#C9A227]/5"],
+.dark [class~="dark:bg-[#C9A227]/30"],
+.dark [class~="dark:bg-[#C9A227]/20"],
+.dark [class~="dark:bg-[#C9A227]/15"],
+.dark [class~="dark:bg-[#C9A227]/10"],
+.dark [class~="dark:bg-[#C9A227]/5"] {
+  background: var(--sr-dark-gold-soft) !important;
+}
+
+.dark .bg-\[\#065F46\],
+.dark [class~="bg-[#065F46]"],
+.dark [class~="dark:bg-[#065F46]"] {
+  background: var(--sr-dark-green-bg) !important;
+}
+
+.dark .bg-\[\#065F46\]\/30,
+.dark .bg-\[\#065F46\]\/20,
+.dark .bg-\[\#065F46\]\/10,
+.dark [class~="bg-[#065F46]/30"],
+.dark [class~="bg-[#065F46]/20"],
+.dark [class~="bg-[#065F46]/10"],
+.dark [class~="dark:bg-[#065F46]/30"],
+.dark [class~="dark:bg-[#065F46]/20"],
+.dark [class~="dark:bg-[#065F46]/10"] {
+  background: var(--sr-dark-green-soft) !important;
+}
+
+.dark .bg-\[\#34D399\],
+.dark [class~="bg-[#34D399]"],
+.dark [class~="dark:bg-[#34D399]"] {
+  background: #58e6ad !important;
+}
+
+.dark .text-\[\#18181B\],
+.dark [class~="text-[#18181B]"],
+.dark [class~="dark:text-[#18181B]"] {
+  color: var(--sr-dark-text) !important;
+}
+
+.dark .text-\[\#18181B\]\/70,
+.dark [class~="text-[#18181B]/70"],
+.dark [class~="dark:text-[#18181B]/70"] {
+  color: var(--sr-dark-text-soft) !important;
+}
+
+.dark .text-\[\#18181B\]\/50,
+.dark .text-\[\#18181B\]\/40,
+.dark [class~="text-[#18181B]/50"],
+.dark [class~="text-[#18181B]/40"],
+.dark [class~="dark:text-[#18181B]/50"],
+.dark [class~="dark:text-[#18181B]/40"] {
+  color: var(--sr-dark-text-faint) !important;
+}
+
+.dark .text-\[\#18181B\]\/30,
+.dark .text-\[\#18181B\]\/20,
+.dark [class~="text-[#18181B]/30"],
+.dark [class~="text-[#18181B]/20"],
+.dark [class~="dark:text-[#18181B]/30"],
+.dark [class~="dark:text-[#18181B]/20"] {
+  color: rgba(176, 184, 200, 0.6) !important;
+}
+
+.dark .text-\[\#FFFDF7\],
+.dark [class~="text-[#FFFDF7]"],
+.dark [class~="dark:text-[#FFFDF7]"] {
+  color: var(--sr-dark-text-strong) !important;
+}
+
+.dark .text-\[\#FFFDF7\]\/70,
+.dark [class~="text-[#FFFDF7]/70"],
+.dark [class~="dark:text-[#FFFDF7]/70"] {
+  color: var(--sr-dark-text-soft) !important;
+}
+
+.dark .text-\[\#FFFDF7\]\/50,
+.dark .text-\[\#FFFDF7\]\/40,
+.dark [class~="text-[#FFFDF7]/50"],
+.dark [class~="text-[#FFFDF7]/40"],
+.dark [class~="dark:text-[#FFFDF7]/50"],
+.dark [class~="dark:text-[#FFFDF7]/40"] {
+  color: var(--sr-dark-text-faint) !important;
+}
+
+.dark .text-\[\#FFFDF7\]\/30,
+.dark [class~="text-[#FFFDF7]/30"],
+.dark [class~="dark:text-[#FFFDF7]/30"] {
+  color: rgba(176, 184, 200, 0.6) !important;
+}
+
+.dark .text-\[\#7F1D1D\],
+.dark [class~="text-[#7F1D1D]"],
+.dark [class~="dark:text-[#7F1D1D]"] {
+  color: var(--sr-dark-red) !important;
+}
+
+.dark .text-\[\#C9A227\],
+.dark [class~="text-[#C9A227]"],
+.dark [class~="dark:text-[#C9A227]"] {
+  color: var(--sr-dark-gold) !important;
+}
+
+.dark .text-\[\#065F46\],
+.dark .text-\[\#34D399\],
+.dark [class~="text-[#065F46]"],
+.dark [class~="text-[#34D399]"],
+.dark [class~="dark:text-[#065F46]"],
+.dark [class~="dark:text-[#34D399]"] {
+  color: var(--sr-dark-green) !important;
+}
+
+.dark .text-\[\#1A73E8\],
+.dark [class~="text-[#1A73E8]"],
+.dark [class~="dark:text-[#1A73E8]"] {
+  color: var(--sr-dark-blue) !important;
+}
+
+.dark .text-\[\#EE4D2D\],
+.dark [class~="text-[#EE4D2D]"],
+.dark [class~="dark:text-[#EE4D2D]"] {
+  color: var(--sr-dark-orange) !important;
+}
+
+.dark .text-\[\#7B2FBE\],
+.dark [class~="text-[#7B2FBE]"],
+.dark [class~="dark:text-[#7B2FBE]"] {
+  color: var(--sr-dark-purple) !important;
+}
+
+.dark .bg-\[\#C9A227\].text-\[\#18181B\],
+.dark [class~="bg-[#C9A227]"][class~="text-[#18181B]"],
+.dark [class~="dark:bg-[#C9A227]"][class~="dark:text-[#18181B]"] {
+  color: #18181b !important;
+}
 
 .dark .border-\[\#18181B\],
-.dark .border-2.border-\[\#18181B\],
-.dark .border-4.border-\[\#18181B\] {
-  border-color: #2d3440 !important;
+.dark [class~="border-[#18181B]"],
+.dark [class~="dark:border-[#18181B]"] {
+  border-color: var(--sr-dark-border) !important;
 }
 
-.dark .border-\[\#18181B\]\/20 {
-  border-color: rgba(45, 52, 64, 0.4) !important;
+.dark .border-\[\#18181B\]\/30,
+.dark .border-\[\#18181B\]\/20,
+.dark .border-\[\#18181B\]\/10,
+.dark [class~="border-[#18181B]/30"],
+.dark [class~="border-[#18181B]/20"],
+.dark [class~="border-[#18181B]/10"],
+.dark [class~="dark:border-[#18181B]/30"],
+.dark [class~="dark:border-[#18181B]/20"],
+.dark [class~="dark:border-[#18181B]/10"] {
+  border-color: var(--sr-dark-border-soft) !important;
 }
 
-.dark .border-\[\#18181B\]\/10 {
-  border-color: rgba(45, 52, 64, 0.25) !important;
+.dark .border-\[\#FFFDF7\],
+.dark [class~="border-[#FFFDF7]"],
+.dark [class~="dark:border-[#FFFDF7]"] {
+  border-color: var(--sr-dark-border) !important;
+}
+
+.dark .border-\[\#FFFDF7\]\/30,
+.dark .border-\[\#FFFDF7\]\/20,
+.dark .border-\[\#FFFDF7\]\/10,
+.dark [class~="border-[#FFFDF7]/30"],
+.dark [class~="border-[#FFFDF7]/20"],
+.dark [class~="border-[#FFFDF7]/10"],
+.dark [class~="dark:border-[#FFFDF7]/30"],
+.dark [class~="dark:border-[#FFFDF7]/20"],
+.dark [class~="dark:border-[#FFFDF7]/10"] {
+  border-color: var(--sr-dark-border-soft) !important;
+}
+
+.dark .border-\[\#7F1D1D\],
+.dark [class~="border-[#7F1D1D]"],
+.dark [class~="dark:border-[#7F1D1D]"] {
+  border-color: #b85757 !important;
+}
+
+.dark .border-\[\#C9A227\],
+.dark [class~="border-[#C9A227]"],
+.dark [class~="dark:border-[#C9A227]"] {
+  border-color: var(--sr-dark-gold) !important;
+}
+
+.dark .border-\[\#065F46\],
+.dark .border-\[\#34D399\],
+.dark [class~="border-[#065F46]"],
+.dark [class~="border-[#34D399]"],
+.dark [class~="dark:border-[#065F46]"],
+.dark [class~="dark:border-[#34D399]"] {
+  border-color: var(--sr-dark-green) !important;
+}
+
+.dark .border-\[\#1A73E8\],
+.dark [class~="border-[#1A73E8]"],
+.dark [class~="dark:border-[#1A73E8]"] {
+  border-color: var(--sr-dark-blue) !important;
+}
+
+.dark .border-\[\#EE4D2D\],
+.dark [class~="border-[#EE4D2D]"],
+.dark [class~="dark:border-[#EE4D2D]"] {
+  border-color: var(--sr-dark-orange) !important;
+}
+
+.dark .border-\[\#7B2FBE\],
+.dark [class~="border-[#7B2FBE]"],
+.dark [class~="dark:border-[#7B2FBE]"] {
+  border-color: var(--sr-dark-purple) !important;
+}
+
+.dark .shadow-\[1px_1px_0px_\#18181B\],
+.dark .shadow-\[1px_1px_0px_\#FFFDF7\],
+.dark [class~="shadow-[1px_1px_0px_#18181B]"],
+.dark [class~="shadow-[1px_1px_0px_#FFFDF7]"],
+.dark [class~="dark:shadow-[1px_1px_0px_#FFFDF7]"] {
+  box-shadow: 1px 1px 0 var(--sr-dark-shadow) !important;
+}
+
+.dark .shadow-\[2px_2px_0px_\#18181B\],
+.dark .shadow-\[2px_2px_0px_\#FFFDF7\],
+.dark [class~="shadow-[2px_2px_0px_#18181B]"],
+.dark [class~="shadow-[2px_2px_0px_#FFFDF7]"],
+.dark [class~="dark:shadow-[2px_2px_0px_#FFFDF7]"],
+.dark [class~="dark:shadow-[2px_2px_0px_#C9A227]"] {
+  box-shadow: 2px 2px 0 var(--sr-dark-shadow) !important;
+}
+
+.dark .shadow-\[3px_3px_0px_\#18181B\],
+.dark .shadow-\[3px_3px_0px_\#FFFDF7\],
+.dark [class~="shadow-[3px_3px_0px_#18181B]"],
+.dark [class~="shadow-[3px_3px_0px_#FFFDF7]"],
+.dark [class~="dark:shadow-[3px_3px_0px_#FFFDF7]"] {
+  box-shadow: 3px 3px 0 var(--sr-dark-shadow) !important;
+}
+
+.dark .shadow-\[4px_4px_0px_\#18181B\],
+.dark .shadow-\[4px_4px_0px_\#FFFDF7\],
+.dark .shadow-\[4px_4px_0px_\#7F1D1D\],
+.dark .shadow-\[4px_4px_0px_\#C9A227\],
+.dark [class~="shadow-[4px_4px_0px_#18181B]"],
+.dark [class~="shadow-[4px_4px_0px_#FFFDF7]"],
+.dark [class~="shadow-[4px_4px_0px_#7F1D1D]"],
+.dark [class~="shadow-[4px_4px_0px_#C9A227]"],
+.dark [class~="dark:shadow-[4px_4px_0px_#FFFDF7]"] {
+  box-shadow: 4px 4px 0 var(--sr-dark-shadow) !important;
+}
+
+.dark .shadow-\[5px_5px_0px_\#18181B\],
+.dark .shadow-\[5px_5px_0px_\#FFFDF7\],
+.dark [class~="shadow-[5px_5px_0px_#18181B]"],
+.dark [class~="shadow-[5px_5px_0px_#FFFDF7]"],
+.dark [class~="dark:shadow-[5px_5px_0px_#FFFDF7]"] {
+  box-shadow: 5px 5px 0 var(--sr-dark-shadow) !important;
 }
 
 .dark .shadow-\[6px_6px_0px_\#18181B\],
-.dark .shadow-\[12px_12px_0px_\#18181B\],
-.dark .shadow-\[4px_4px_0px_\#18181B\],
-.dark .shadow-\[3px_3px_0px_\#18181B\],
-.dark .shadow-\[2px_2px_0px_\#18181B\],
+.dark .shadow-\[6px_6px_0px_\#FFFDF7\],
+.dark [class~="shadow-[6px_6px_0px_#18181B]"],
+.dark [class~="shadow-[6px_6px_0px_#FFFDF7]"],
+.dark [class~="dark:shadow-[6px_6px_0px_#FFFDF7]"] {
+  box-shadow: 6px 6px 0 var(--sr-dark-shadow) !important;
+}
+
 .dark .shadow-\[8px_8px_0px_\#18181B\],
+.dark .shadow-\[8px_8px_0px_\#FFFDF7\],
+.dark [class~="shadow-[8px_8px_0px_#18181B]"],
+.dark [class~="shadow-[8px_8px_0px_#FFFDF7]"],
+.dark [class~="dark:shadow-[8px_8px_0px_#FFFDF7]"] {
+  box-shadow: 8px 8px 0 var(--sr-dark-shadow) !important;
+}
+
 .dark .shadow-\[10px_10px_0px_\#18181B\],
-.dark .shadow-\[-8px_0_0px_\#18181B\] {
-  box-shadow: 6px 6px 0px #1a1e26 !important;
+.dark .shadow-\[10px_10px_0px_\#FFFDF7\],
+.dark [class~="shadow-[10px_10px_0px_#18181B]"],
+.dark [class~="shadow-[10px_10px_0px_#FFFDF7]"],
+.dark [class~="dark:shadow-[10px_10px_0px_#FFFDF7]"] {
+  box-shadow: 10px 10px 0 var(--sr-dark-shadow) !important;
 }
 
-/* ============================================
-   3. TEKS - KONTRAST BAIK
-   ============================================ */
-
-.dark .text-\[\#18181B\] {
-  color: #e8edf5 !important;
+.dark .shadow-\[12px_12px_0px_\#18181B\],
+.dark .shadow-\[12px_12px_0px_\#FFFDF7\],
+.dark [class~="shadow-[12px_12px_0px_#18181B]"],
+.dark [class~="shadow-[12px_12px_0px_#FFFDF7]"],
+.dark [class~="dark:shadow-[12px_12px_0px_#FFFDF7]"] {
+  box-shadow: 12px 12px 0 var(--sr-dark-shadow) !important;
 }
 
-.dark .text-\[\#18181B\]\/70 {
-  color: #b0b8c8 !important;
+.dark .shadow-\[-8px_0_0px_\#18181B\],
+.dark .shadow-\[-8px_0_0px_\#FFFDF7\],
+.dark [class~="shadow-[-8px_0_0px_#18181B]"],
+.dark [class~="shadow-[-8px_0_0px_#FFFDF7]"],
+.dark [class~="dark:shadow-[-8px_0_0px_#FFFDF7]"] {
+  box-shadow: -8px 0 0 var(--sr-dark-shadow) !important;
 }
-
-.dark .text-\[\#18181B\]\/50 {
-  color: #8892a8 !important;
-}
-
-.dark .text-\[\#18181B\]\/40 {
-  color: #6b7488 !important;
-}
-
-.dark .text-\[\#18181B\]\/30 {
-  color: #4d5566 !important;
-}
-
-.dark .text-\[\#18181B\]\/20 {
-  color: #3a4050 !important;
-}
-
-.dark h1,
-.dark h2,
-.dark h3,
-.dark h4 {
-  color: #e8edf5;
-}
-
-/* ============================================
-   4. WARNA MERAH - SAMA SEPERTI GRAFIK (#8B3A3A)
-   ============================================ */
-
-/* SIDEBAR */
-.dark aside.bg-\[\#7F1D1D\] {
-  background: #4A2828 !important;
-  background: linear-gradient(180deg, #4A2828 0%, #3A1E1E 100%) !important;
-}
-
-.dark aside a.bg-\[\#C9A227\],
-.dark aside a[class*="bg-\[\#C9A227\""] {
-  background: #6A2A2A !important;
-  border-color: #4A2020 !important;
-  color: #ffffff !important;
-}
-
-.dark aside a.bg-\[\#C9A227\] svg,
-.dark aside a[class*="bg-\[\#C9A227\""] svg {
-  color: #ffffff !important;
-}
-
-/* TABEL HEADER */
-.dark thead .bg-\[\#7F1D1D\],
-.dark th.bg-\[\#7F1D1D\],
-.dark .border-b-2.border-\[\#18181B\].bg-\[\#7F1D1D\] {
-  background: #6A2A2A !important;
-}
-
-.dark thead th {
-  color: #ffffff !important;
-}
-
-/* BUTTON & BADGE */
-.dark button.bg-\[\#7F1D1D\],
-.dark a.bg-\[\#7F1D1D\],
-.dark .bg-\[\#7F1D1D\],
-.dark .bg-\[\#7F1D1D\].text-\[\#FFFDF7\],
-.dark button.border-4.border-\[\#18181B\].bg-\[\#7F1D1D\],
-.dark button.bg-\[\#7F1D1D\].text-\[\#FFFDF7\] {
-  background: #6A2A2A !important;
-  border-color: #4A2020 !important;
-  color: #ffffff !important;
-}
-
-.dark button.bg-\[\#7F1D1D\]:hover {
-  background: #7A3232 !important;
-}
-
-.dark .text-\[\#7F1D1D\] {
-  color: #B86A6A !important;
-}
-
-.dark .border-\[\#7F1D1D\] {
-  border-color: #6A2A2A !important;
-}
-
-.dark .bg-\[\#7F1D1D\]\/10 {
-  background: rgba(139, 58, 58, 0.12) !important;
-}
-
-.dark .bg-\[\#7F1D1D\]\/30 {
-  background: rgba(139, 58, 58, 0.25) !important;
-}
-
-.dark .border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10 {
-  background: rgba(139, 58, 58, 0.12) !important;
-  border-color: #6A2A2A !important;
-  color: #B86A6A !important;
-}
-
-/* DELETE BUTTON */
-.dark button.border-2.border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10 {
-  background: rgba(139, 58, 58, 0.12) !important;
-  border-color: #6A2A2A !important;
-  color: #B86A6A !important;
-}
-
-.dark button.border-2.border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10:hover {
-  background: rgba(139, 58, 58, 0.25) !important;
-}
-
-/* ============================================
-   5. ICON BOX - BRIGHTNESS DITINGKATKAN
-   ============================================ */
-
-/* Icon box ukuran 12 (h-12 w-12) */
-.dark .flex.h-12.w-12.border-2.border-\[\#18181B\].bg-\[\#C9A227\],
-.dark .flex.h-12.w-12.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] {
-  background: #7A3535 !important;
-  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
-  border-color: #4A2020 !important;
-  box-shadow: 3px 3px 0px #2A1818 !important;
-}
-
-.dark .flex.h-12.w-12.border-2.border-\[\#18181B\].bg-\[\#C9A227\] svg,
-.dark .flex.h-12.w-12.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] svg {
-  color: #ffffff !important;
-  opacity: 1 !important;
-}
-
-/* Icon box ukuran 10 (h-10 w-10) */
-.dark .flex.h-10.w-10.border-2.border-\[\#18181B\].bg-\[\#C9A227\],
-.dark .flex.h-10.w-10.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\],
-.dark .flex.h-10.w-10.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] {
-  background: #7A3535 !important;
-  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
-  border-color: #4A2020 !important;
-  box-shadow: 3px 3px 0px #2A1818 !important;
-}
-
-.dark .flex.h-10.w-10.border-2.border-\[\#18181B\].bg-\[\#C9A227\] svg,
-.dark .flex.h-10.w-10.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] svg {
-  color: #ffffff !important;
-  opacity: 1 !important;
-}
-
-/* ============================================
-   6. CHART - WARNA #8B3A3A (SAMA DENGAN GRAFIK)
-   ============================================ */
-
-.dark .recharts-bar-rectangle {
-  fill: #8B3A3A !important;
-}
-
-.dark .recharts-bar-rectangle:hover {
-  fill: #9A4A4A !important;
-}
-
-.dark .recharts-line-curve {
-  stroke: #8B3A3A !important;
-}
-
-.dark .recharts-line-dot {
-  stroke: #8B3A3A !important;
-  fill: #1a1e26 !important;
-}
-
-.dark .recharts-line-active-dot {
-  stroke: #9A4A4A !important;
-  fill: #9A4A4A !important;
-}
-
-.dark .recharts-cartesian-axis-tick-value,
-.dark .recharts-cartesian-axis-tick text,
-.dark .recharts-text {
-  fill: #b0b8c8 !important;
-}
-
-.dark .recharts-cartesian-axis-line {
-  stroke: #2d3440 !important;
-}
-
-.dark .recharts-cartesian-grid-horizontal line,
-.dark .recharts-cartesian-grid-vertical line {
-  stroke: rgba(45, 52, 64, 0.3) !important;
-}
-
-.dark .recharts-tooltip-wrapper {
-  background: #232833 !important;
-  border: 2px solid #2d3440 !important;
-  border-radius: 8px !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
-}
-
-.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
-  background: #232833 !important;
-  border: none !important;
-  border-radius: 8px !important;
-  padding: 12px 16px !important;
-  box-shadow: none !important;
-}
-
-.dark .recharts-tooltip-wrapper .recharts-tooltip-label {
-  color: #e8edf5 !important;
-  font-weight: 700 !important;
-}
-
-.dark .recharts-tooltip-wrapper .recharts-tooltip-item {
-  color: #b0b8c8 !important;
-}
-
-.dark .recharts-tooltip-wrapper .recharts-tooltip-item-value {
-  color: #b8a050 !important;
-  font-weight: 700 !important;
-}
-
-.dark .recharts-legend-item-text {
-  color: #b0b8c8 !important;
-}
-
-/* ============================================
-   7. INPUT & FORM
-   ============================================ */
 
 .dark input,
 .dark select,
-.dark textarea {
-  background: #1a1e26 !important;
-  border-color: #2d3440 !important;
-  color: #e8edf5 !important;
-}
-
-.dark input:focus,
-.dark select:focus,
-.dark textarea:focus {
-  border-color: #2a7a5e !important;
-  box-shadow: 0 0 0 3px rgba(42, 122, 94, 0.15) !important;
+.dark textarea,
+.dark [role="combobox"],
+.dark [data-slot="select-trigger"] {
+  background: var(--sr-dark-surface-2) !important;
+  border-color: var(--sr-dark-border) !important;
+  color: var(--sr-dark-text) !important;
 }
 
 .dark input::placeholder,
 .dark textarea::placeholder {
-  color: #6b7488 !important;
+  color: var(--sr-dark-text-faint) !important;
 }
 
-/* ============================================
-   8. SCROLLBAR
-   ============================================ */
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus,
+.dark [role="combobox"]:focus,
+.dark [data-slot="select-trigger"]:focus {
+  border-color: var(--sr-dark-gold) !important;
+  box-shadow: 0 0 0 3px rgba(232, 200, 74, 0.16) !important;
+}
+
+.dark table,
+.dark thead,
+.dark tbody,
+.dark tr,
+.dark td,
+.dark th {
+  color: inherit !important;
+}
+
+.dark tbody tr:hover,
+.dark .table-row-hover-animated:hover,
+.dark .hover\:bg-\[\#C9A227\]\/10:hover,
+.dark .hover\:bg-\[\#C9A227\]\/20:hover,
+.dark [class~="hover:bg-[#C9A227]/10"]:hover,
+.dark [class~="hover:bg-[#C9A227]/20"]:hover,
+.dark [class~="dark:hover:bg-[#C9A227]/10"]:hover,
+.dark [class~="dark:hover:bg-[#C9A227]/20"]:hover {
+  background-color: rgba(232, 200, 74, 0.12) !important;
+}
+
+.dark .hover\:bg-\[\#FFFDF7\]:hover,
+.dark [class~="hover:bg-[#FFFDF7]"]:hover {
+  background: var(--sr-dark-surface-2) !important;
+}
+
+.dark .corner-accent::before,
+.dark .corner-accent::after,
+.dark .corner-accent-animated::before,
+.dark .corner-accent-animated::after {
+  border-color: var(--sr-dark-gold) !important;
+}
+
+.dark .decorative-line {
+  background: linear-gradient(90deg, transparent, var(--sr-dark-gold), transparent) !important;
+}
+
+.dark .text-gradient {
+  background: linear-gradient(135deg, var(--sr-dark-red) 0%, var(--sr-dark-gold) 50%, var(--sr-dark-green) 100%) !important;
+  background-clip: text !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
 
 .dark ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px !important;
+  height: 8px !important;
 }
 
 .dark ::-webkit-scrollbar-track {
-  background: #1a1e26;
-  border-radius: 3px;
+  background: var(--sr-dark-page) !important;
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #2d3440;
-  border-radius: 3px;
+  background: var(--sr-dark-border) !important;
+  border-radius: 9999px !important;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #3a4050;
+  background: #445064 !important;
 }
 
-/* ============================================
-   9. HOVER EFFECTS
-   ============================================ */
-
-.dark .hover\:bg-\[\#C9A227\]\/20:hover {
-  background-color: rgba(154, 133, 64, 0.12) !important;
+/* Sidebar dark mode */
+.dark aside {
+  background: #7a3535 !important;
+  color: var(--sr-dark-text-strong) !important;
 }
 
-.dark .hover\:bg-\[\#C9A227\]\/10:hover {
-  background-color: rgba(154, 133, 64, 0.08) !important;
+.dark aside [class~="bg-[#C9A227]"],
+.dark aside [class~="dark:bg-[#C9A227]"],
+.dark aside .bg-\[\#C9A227\] {
+  background: var(--sr-dark-gold-bg) !important;
+  color: #18181b !important;
 }
 
-.dark .hover\:bg-\[\#FFFDF7\]:hover {
-  background: #2a303d !important;
+.dark aside [class~="bg-[#C9A227]"] *,
+.dark aside [class~="dark:bg-[#C9A227]"] *,
+.dark aside .bg-\[\#C9A227\] * {
+  color: #18181b !important;
 }
 
-.dark .hover\:text-\[\#FFFDF7\]:hover {
-  color: #e8edf5 !important;
+/* Recharts dark mode */
+.dark .recharts-wrapper,
+.dark .recharts-surface {
+  color: var(--sr-dark-text) !important;
+  overflow: visible !important;
 }
 
-.dark .hover\:shadow-\[10px_10px_0px_\#18181B\]:hover,
-.dark .hover\:shadow-\[8px_8px_0px_\#18181B\]:hover {
-  box-shadow: 10px 10px 0px #1a1e26 !important;
+.dark .recharts-wrapper text,
+.dark .recharts-wrapper tspan,
+.dark .recharts-cartesian-axis text,
+.dark .recharts-cartesian-axis-tick-value,
+.dark .recharts-text,
+.dark .recharts-label,
+.dark .recharts-label-list text {
+  fill: var(--sr-dark-text-soft) !important;
+  color: var(--sr-dark-text-soft) !important;
 }
 
-/* ============================================
-   10. TOP 5 MENU - RANKING
-   ============================================ */
-
-.dark .bg-\[\#7F1D1D\].text-\[\#FFFDF7\].border-\[\#18181B\],
-.dark .flex.h-7.w-7.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#7F1D1D\] {
-  background: #7A3535 !important;
-  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
-  border-color: #4A2020 !important;
-  color: #ffffff !important;
+.dark .recharts-wrapper [fill="#18181B"],
+.dark .recharts-wrapper [fill="#18181b"] {
+  fill: var(--sr-dark-text-soft) !important;
 }
 
-/* ============================================
-   11. SHADOW MERAH
-   ============================================ */
-
-.dark .shadow-\[3px_3px_0px_\#7F1D1D\],
-.dark .shadow-\[4px_4px_0px_\#7F1D1D\],
-.dark .shadow-\[2px_2px_0px_\#7F1D1D\],
-.dark .shadow-\[6px_6px_0px_\#7F1D1D\] {
-  box-shadow: 3px 3px 0px #4A2828 !important;
+.dark .recharts-wrapper [stroke="#18181B"],
+.dark .recharts-wrapper [stroke="#18181b"],
+.dark .recharts-cartesian-axis-line,
+.dark .recharts-cartesian-axis-tick-line {
+  stroke: var(--sr-dark-text-faint) !important;
 }
 
-/* ============================================
-   12. TABLE - DARK MODE
-   ============================================ */
-
-.dark .border-b-2.border-\[\#18181B\],
-.dark .border-b-4.border-\[\#18181B\],
-.dark .border-t-2.border-\[\#18181B\] {
-  border-color: #2d3440 !important;
+.dark .recharts-cartesian-grid line,
+.dark .recharts-wrapper [stroke="#E7D9B8"],
+.dark .recharts-wrapper [stroke="#e7d9b8"] {
+  stroke: var(--sr-dark-border) !important;
 }
 
-.dark .border-b-2.border-\[\#18181B\]\/20 {
-  border-bottom-color: rgba(45, 52, 64, 0.3) !important;
+.dark .recharts-wrapper [fill="#E7D9B8"],
+.dark .recharts-wrapper [fill="#e7d9b8"],
+.dark .recharts-tooltip-cursor,
+.dark .recharts-cartesian-axis-cursor {
+  fill: rgba(232, 200, 74, 0.12) !important;
+  stroke: rgba(232, 200, 74, 0.35) !important;
 }
 
-.dark .border-\[\#18181B\]\/20 {
-  border-color: rgba(45, 52, 64, 0.3) !important;
+.dark .recharts-wrapper [fill="#FFFDF7"],
+.dark .recharts-wrapper [fill="#fffdf7"] {
+  fill: var(--sr-dark-surface) !important;
 }
 
-/* ============================================
-   13. LAINNYA
-   ============================================ */
-
-.dark .border-2.border-\[\#C9A227\] {
-  border-color: #9a8540 !important;
-}
-
-.dark .border-2.border-\[\#065F46\] {
-  border-color: #1a6b4f !important;
-}
-
-.dark .border-2.border-\[\#7F1D1D\] {
-  border-color: #6A2A2A !important;
-}
-
-.dark .bg-\[\#18181B\]\/80 {
-  background: rgba(26, 30, 38, 0.85) !important;
-}
-
-.dark .border-soft {
-  border-color: rgba(45, 52, 64, 0.4) !important;
-}
-
-.dark .border-border {
-  border-color: #2d3440 !important;
-}
-
-.dark .bg-primary-green {
-  background: #1a6b4f !important;
-}
-
-.dark .bg-accent-gold {
-  background: #9a8540 !important;
-}
-
-.dark .bg-destructive-red {
-  background: #6A2A2A !important;
-}
-
-.dark .animate-pulse {
-  animation: pulse-dark 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse-dark {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
-}
-
-/* ============================================
-   TINGKATKAN BRIGHTNESS SEMUA AKSEN MERAH
-   ============================================ */
-
-/* ============================================
-   1. WARNA MERAH UTAMA - LEBIH TERANG
-   ============================================ */
-
-/* Teks merah - lebih terang dan jelas */
-.dark .text-\[\#7F1D1D\] {
-  color: #D68A8A !important;
-}
-
-.dark .text-\[\#7F1D1D\]\/70 {
-  color: #D68A8A !important;
-}
-
-.dark .text-\[\#7F1D1D\]\/50 {
-  color: #E8A0A0 !important;
-}
-
-.dark .text-\[\#7F1D1D\]\/30 {
-  color: #F0B8B8 !important;
-}
-
-/* ============================================
-   2. BORDER MERAH - LEBIH TERANG
-   ============================================ */
-
-.dark .border-\[\#7F1D1D\] {
-  border-color: #8A4040 !important;
-}
-
-.dark .border-2.border-\[\#7F1D1D\] {
-  border-color: #8A4040 !important;
-}
-
-.dark .border-\[\#7F1D1D\]\/20 {
-  border-color: rgba(139, 58, 58, 0.35) !important;
-}
-
-/* ============================================
-   3. BACKGROUND MERAH - LEBIH TERANG
-   ============================================ */
-
-.dark .bg-\[\#7F1D1D\] {
-  background: #7A3535 !important;
-  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
-}
-
-.dark button.bg-\[\#7F1D1D\] {
-  background: #7A3535 !important;
-  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
-}
-
-.dark .bg-\[\#7F1D1D\].text-\[\#FFFDF7\] {
-  background: #7A3535 !important;
-  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
-}
-
-.dark .bg-\[\#7F1D1D\]\/10 {
-  background: rgba(139, 58, 58, 0.18) !important;
-}
-
-.dark .bg-\[\#7F1D1D\]\/30 {
-  background: rgba(139, 58, 58, 0.30) !important;
-}
-
-.dark button.bg-\[\#7F1D1D\]:hover {
-  background: #8A4040 !important;
-  background: linear-gradient(145deg, #8A4040 0%, #7A3535 100%) !important;
-}
-
-/* ============================================
-   4. TABEL HEADER - MERAH LEBIH TERANG
-   ============================================ */
-
-.dark thead .bg-\[\#7F1D1D\],
-.dark th.bg-\[\#7F1D1D\],
-.dark .border-b-2.border-\[\#18181B\].bg-\[\#7F1D1D\] {
-  background: #7A3535 !important;
-  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
-}
-
-.dark thead th {
-  color: #ffffff !important;
-}
-
-/* Table row hover - lebih terang */
-.dark .hover\:bg-\[\#C9A227\]\/10:hover {
-  background-color: rgba(139, 58, 58, 0.12) !important;
-}
-
-.dark .hover\:bg-\[\#C9A227\]\/20:hover {
-  background-color: rgba(139, 58, 58, 0.18) !important;
-}
-
-/* ============================================
-   5. SIDEBAR - MERAH LEBIH TERANG
-   ============================================ */
-
-.dark aside.bg-\[\#7F1D1D\] {
-  background: #4A2828 !important;
-  background: linear-gradient(180deg, #4A2828 0%, #3A1E1E 100%) !important;
-}
-
-.dark aside a.bg-\[\#C9A227\],
-.dark aside a[class*="bg-\[\#C9A227\""] {
-  background: #7A3535 !important;
-  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
-  border-color: #5A2828 !important;
-  color: #ffffff !important;
-}
-
-.dark aside a.bg-\[\#C9A227\] svg,
-.dark aside a[class*="bg-\[\#C9A227\""] svg {
-  color: #ffffff !important;
+.dark .recharts-wrapper [fill="#7F1D1D"],
+.dark .recharts-wrapper [fill="#7f1d1d"],
+.dark .recharts-bar-rectangle,
+.dark .recharts-bar-rectangle path,
+.dark .recharts-bar-rectangle rect,
+.dark .recharts-bar-rectangle .recharts-rectangle,
+.dark .recharts-active-bar .recharts-rectangle {
+  fill: var(--sr-dark-red) !important;
   opacity: 1 !important;
 }
 
-/* ============================================
-   6. BUTTON - MERAH LEBIH TERANG
-   ============================================ */
-
-/* NeoButton */
-.dark button.border-4.border-\[\#18181B\].bg-\[\#7F1D1D\] {
-  background: #7A3535 !important;
-  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
-  border-color: #4A2020 !important;
-  color: #ffffff !important;
-}
-
-.dark button.border-4.border-\[\#18181B\].bg-\[\#7F1D1D\]:hover {
-  background: #8A4040 !important;
-  background: linear-gradient(145deg, #8A4040 0%, #7A3535 100%) !important;
-}
-
-/* KASIR - TAB BUTTON */
-.dark button.bg-\[\#7F1D1D\].text-\[\#FFFDF7\] {
-  background: #7A3535 !important;
-  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
-  color: #ffffff !important;
-}
-
-/* ============================================
-   7. BADGE - MERAH LEBIH TERANG
-   ============================================ */
-
-.dark .border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10,
-.dark .border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10.text-\[\#7F1D1D\] {
-  background: rgba(139, 58, 58, 0.18) !important;
-  border-color: #8A4040 !important;
-  color: #D68A8A !important;
-}
-
-/* ============================================
-   8. DELETE BUTTON - MERAH LEBIH TERANG
-   ============================================ */
-
-.dark button.border-2.border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10 {
-  background: rgba(139, 58, 58, 0.18) !important;
-  border-color: #8A4040 !important;
-  color: #D68A8A !important;
-}
-
-.dark button.border-2.border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10:hover {
-  background: rgba(139, 58, 58, 0.32) !important;
-}
-
-/* ============================================
-   9. ICON BOX - MERAH LEBIH TERANG
-   ============================================ */
-
-/* Icon box ukuran 12 */
-.dark .flex.h-12.w-12.border-2.border-\[\#18181B\].bg-\[\#C9A227\],
-.dark .flex.h-12.w-12.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] {
-  background: #7A3535 !important;
-  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
-  border-color: #5A2828 !important;
-  box-shadow: 3px 3px 0px #3A2020 !important;
-}
-
-.dark .flex.h-12.w-12.border-2.border-\[\#18181B\].bg-\[\#C9A227\] svg,
-.dark .flex.h-12.w-12.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] svg {
-  color: #ffffff !important;
-  opacity: 1 !important;
-}
-
-/* Icon box ukuran 10 */
-.dark .flex.h-10.w-10.border-2.border-\[\#18181B\].bg-\[\#C9A227\],
-.dark .flex.h-10.w-10.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\],
-.dark .flex.h-10.w-10.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] {
-  background: #7A3535 !important;
-  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
-  border-color: #5A2828 !important;
-  box-shadow: 3px 3px 0px #3A2020 !important;
-}
-
-.dark .flex.h-10.w-10.border-2.border-\[\#18181B\].bg-\[\#C9A227\] svg,
-.dark .flex.h-10.w-10.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] svg {
-  color: #ffffff !important;
-  opacity: 1 !important;
-}
-
-/* ============================================
-   10. RINCIAN KAS MASUK - ICON BOX
-   ============================================ */
-
-.dark .flex.h-10.w-10.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] {
-  background: #7A3535 !important;
-  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
-  border-color: #5A2828 !important;
-  box-shadow: 3px 3px 0px #3A2020 !important;
-}
-
-.dark .flex.h-10.w-10.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#C9A227\] svg {
-  color: #ffffff !important;
-  opacity: 1 !important;
-}
-
-/* ============================================
-   11. SHADOW MERAH - LEBIH TERANG
-   ============================================ */
-
-.dark .shadow-\[3px_3px_0px_\#7F1D1D\],
-.dark .shadow-\[4px_4px_0px_\#7F1D1D\],
-.dark .shadow-\[2px_2px_0px_\#7F1D1D\],
-.dark .shadow-\[6px_6px_0px_\#7F1D1D\] {
-  box-shadow: 3px 3px 0px #4A2828 !important;
-}
-
-/* ============================================
-   12. TOP 5 MENU - RANKING ICON
-   ============================================ */
-
-.dark .bg-\[\#7F1D1D\].text-\[\#FFFDF7\].border-\[\#18181B\],
-.dark .flex.h-7.w-7.items-center.justify-center.border-2.border-\[\#18181B\].bg-\[\#7F1D1D\] {
-  background: #7A3535 !important;
-  background: linear-gradient(145deg, #7A3535 0%, #6A2E2E 100%) !important;
-  border-color: #5A2828 !important;
-  color: #ffffff !important;
-}
-
-/* ============================================
-   13. KARYAWAN - ROLE BADGE OWNER
-   ============================================ */
-
-.dark .border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10.text-\[\#7F1D1D\] {
-  background: rgba(139, 58, 58, 0.18) !important;
-  border-color: #8A4040 !important;
-  color: #D68A8A !important;
-}
-
-/* ============================================
-   14. AVATAR - WARNA MERAH LEBIH TERANG
-   ============================================ */
-
-.dark .border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10.text-\[\#7F1D1D\] {
-  background: rgba(139, 58, 58, 0.18) !important;
-  border-color: #8A4040 !important;
-  color: #D68A8A !important;
-}
-
-/* ============================================
-   15. DAPUR - STATUS BADGE
-   ============================================ */
-
-.dark .border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10 {
-  background: rgba(139, 58, 58, 0.18) !important;
-  border-color: #8A4040 !important;
-}
-
-.dark .border-\[\#7F1D1D\].bg-\[\#7F1D1D\]\/10.text-\[\#7F1D1D\] {
-  background: rgba(139, 58, 58, 0.18) !important;
-  border-color: #8A4040 !important;
-  color: #D68A8A !important;
-}
-
-/* ============================================
-   16. CHART - TETAP SAMA
-   ============================================ */
-
-.dark .recharts-bar-rectangle {
-  fill: #8B3A3A !important;
-}
-
-.dark .recharts-bar-rectangle:hover {
-  fill: #9A4A4A !important;
-}
-
+.dark .recharts-wrapper [stroke="#7F1D1D"],
+.dark .recharts-wrapper [stroke="#7f1d1d"],
 .dark .recharts-line-curve {
-  stroke: #8B3A3A !important;
+  stroke: var(--sr-dark-red) !important;
+  opacity: 1 !important;
 }
 
-.dark .recharts-line-dot {
-  stroke: #8B3A3A !important;
-  fill: #1a1e26 !important;
+.dark .recharts-line-dot,
+.dark .recharts-line-active-dot,
+.dark .recharts-dot {
+  stroke: var(--sr-dark-red) !important;
+  fill: var(--sr-dark-surface) !important;
+  opacity: 1 !important;
 }
 
 .dark .recharts-line-active-dot {
-  stroke: #9A4A4A !important;
-  fill: #9A4A4A !important;
+  stroke: #f0a0a0 !important;
+  fill: #f0a0a0 !important;
+}
+
+.dark .recharts-default-tooltip,
+.dark .recharts-tooltip-wrapper,
+.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: var(--sr-dark-surface-2) !important;
+  background-color: var(--sr-dark-surface-2) !important;
+  border: 3px solid var(--sr-dark-border) !important;
+  border-radius: 0 !important;
+  box-shadow: 6px 6px 0 var(--sr-dark-shadow) !important;
+  color: var(--sr-dark-text) !important;
+}
+
+.dark .recharts-tooltip-wrapper * {
+  color: var(--sr-dark-text) !important;
+}
+
+.dark .recharts-tooltip-label {
+  color: var(--sr-dark-text-strong) !important;
+  font-weight: 900 !important;
+}
+
+.dark .recharts-tooltip-item,
+.dark .recharts-tooltip-item-name {
+  color: var(--sr-dark-text-soft) !important;
+}
+
+.dark .recharts-tooltip-item-value,
+.dark .recharts-legend-item-text {
+  color: var(--sr-dark-gold) !important;
 }

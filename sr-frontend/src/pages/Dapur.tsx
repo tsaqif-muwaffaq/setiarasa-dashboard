@@ -4,12 +4,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGlobalLoading } from '@/components/GlobalLoadingProvider';
 import { toast } from 'sonner';
-import { ChefHat, Clock, CheckCircle2, Utensils, Flame, Wifi, Bell, BellOff } from 'lucide-react';
+import { ChefHat, Clock, CheckCircle2, Utensils, Flame, Wifi, Bell, BellOff, CheckCircle, XCircle, Info } from 'lucide-react';
 
 // ── Komponen Neubrutalism ──
 function NeoCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`border-4 border-[#18181B] bg-[#FFFDF7] shadow-[6px_6px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[6px_6px_0px_#FFFDF7] card-lift-premium ${className}`}>
+    <div className={`border-4 border-[#18181B] dark:border-[#FFFDF7] bg-[#FFFDF7] dark:bg-[#18181B] shadow-[6px_6px_0px_#18181B] dark:shadow-[6px_6px_0px_#FFFDF7] card-lift-premium border-glow-animated ${className}`}>
       {children}
     </div>
   );
@@ -22,6 +22,25 @@ function NeoBadge({ children, className = '' }: { children: React.ReactNode; cla
     </span>
   );
 }
+
+// Custom toast dengan icon
+const toastSuccess = (message: string) => {
+  toast.success(message, {
+    icon: <CheckCircle className="w-4 h-4 text-[#065F46]" />,
+  });
+};
+
+const toastError = (message: string) => {
+  toast.error(message, {
+    icon: <XCircle className="w-4 h-4 text-[#7F1D1D]" />,
+  });
+};
+
+const toastInfo = (message: string) => {
+  toast.info(message, {
+    icon: <Info className="w-4 h-4 text-[#C9A227]" />,
+  });
+};
 
 interface OrderItem {
   id: string;
@@ -60,7 +79,7 @@ function ElapsedBadge({ createdAt }: { createdAt: string }) {
   const isLate = mins >= 10;
   return (
     <span
-      className={`border-2 px-2 py-0.5 text-[11px] font-black shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7] ${isLate ? 'border-[#7F1D1D] bg-[#7F1D1D]/10 text-[#7F1D1D]' : 'border-[#18181B] bg-[#FFFDF7] text-[#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:text-[#FFFDF7]'}`}
+      className={`border-2 px-2 py-0.5 text-[11px] font-black shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7] ${isLate ? 'border-[#7F1D1D] bg-[#7F1D1D]/10 text-[#7F1D1D]' : 'border-[#18181B] bg-[#FFFDF7] text-[#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:text-[#FFFDF7]'} font-jetbrains`}
     >
       {mins < 1 ? 'Baru' : `${mins} mnt`}
     </span>
@@ -84,13 +103,15 @@ function OrderCard({
   const orderItems = Array.isArray(order.items) ? order.items : [];
 
   return (
-    <NeoCard className={`p-3 animate-fade-in-up-delay-${(index % 4) + 1}`}>
+    <NeoCard className={`p-3 animate-fade-in-up-delay-${(index % 4) + 1} corner-accent-animated`}>
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="min-w-0">
-          <p className="font-black text-sm text-[#18181B] dark:text-[#FFFDF7] truncate">
-            {order.tableNumber ? `Meja ${order.tableNumber}` : '🛍 Bawa Pulang'}
+          <p className="font-black text-sm text-[#18181B] dark:text-[#FFFDF7] truncate font-space">
+            {order.tableNumber ? `Meja ${order.tableNumber}` : 'Bawa Pulang'}
           </p>
-          <p className="text-xs font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 truncate mt-0.5">{order.customerName || 'Pelanggan'}</p>
+          <p className="text-xs font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 truncate mt-0.5 font-dm-sans">
+            {order.customerName || 'Pelanggan'}
+          </p>
         </div>
         <ElapsedBadge createdAt={order.createdAt || new Date().toISOString()} />
       </div>
@@ -98,16 +119,18 @@ function OrderCard({
       <ul className="space-y-0.5 mb-3">
         {orderItems.map((item, itemIndex) => (
           <li key={item.id || `${order.id}-${itemIndex}`} className="flex items-baseline gap-2 text-sm">
-            <span className={`font-black text-xs w-6 text-right ${isPendingVariant ? 'text-[#C9A227]' : 'text-[#065F46]'}`}>
+            <span className={`font-black text-xs w-6 text-right ${isPendingVariant ? 'text-[#C9A227]' : 'text-[#065F46]'} font-jetbrains`}>
               {item.quantity ?? 0}×
             </span>
-            <span className="font-bold text-[#18181B] dark:text-[#FFFDF7]">{item.menu?.name ?? 'Menu'}</span>
+            <span className="font-bold text-[#18181B] dark:text-[#FFFDF7] font-dm-sans">
+              {item.menu?.name ?? 'Menu'}
+            </span>
           </li>
         ))}
       </ul>
 
       <button
-        className={`w-full border-4 border-[#18181B] font-black py-2 text-xs shadow-[4px_4px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[2px_2px_0px_#18181B] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 dark:border-[#FFFDF7] dark:shadow-[4px_4px_0px_#FFFDF7] dark:hover:shadow-[6px_6px_0px_#FFFDF7] card-lift-premium ${isPendingVariant ? 'bg-[#C9A227] text-[#18181B]' : 'bg-[#065F46] text-[#FFFDF7]'}`}
+        className={`w-full border-4 border-[#18181B] font-black py-2 text-xs shadow-[4px_4px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[2px_2px_0px_#18181B] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 dark:border-[#FFFDF7] dark:shadow-[4px_4px_0px_#FFFDF7] dark:hover:shadow-[6px_6px_0px_#FFFDF7] card-lift-premium ripple-button font-dm-sans ${isPendingVariant ? 'bg-[#C9A227] text-[#18181B]' : 'bg-[#065F46] text-[#FFFDF7]'}`}
         onClick={onAction}
         disabled={isPending}
       >
@@ -196,10 +219,7 @@ const { data: orders, isLoading } = useQuery<Order[]>({
       if (isSoundEnabled) {
         playNotif();
         const newOrder = pendingOrders[pendingOrders.length - 1];
-        toast.info(`🔔 Pesanan baru dari ${newOrder?.customerName || 'Pelanggan'}!`, {
-          duration: 4000,
-          icon: '🍳',
-        });
+        toastInfo(`Pesanan baru dari ${newOrder?.customerName || 'Pelanggan'}!`);
       }
     }
     setPrevOrderCount(pendingOrders.length);
@@ -210,8 +230,8 @@ const { data: orders, isLoading } = useQuery<Order[]>({
     const newState = !soundEnabled;
     setSoundEnabled(newState);
     localStorage.setItem('sr_notification_sound', String(newState));
-    if (newState) toast.success('🔊 Suara notifikasi diaktifkan');
-    else toast.success('🔇 Suara notifikasi dimatikan');
+    if (newState) toastSuccess('Suara notifikasi diaktifkan');
+    else toastSuccess('Suara notifikasi dimatikan');
   };
 
   const updateStatusMutation = useMutation({
@@ -219,34 +239,34 @@ const { data: orders, isLoading } = useQuery<Order[]>({
       await axios.patch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders/${id}/status`, { status }, axiosConfig);
     },
     onSuccess: (_, variables) => {
-      if (variables.status === 'COOKING') toast.info('🔪 Pesanan mulai dimasak!');
-      if (variables.status === 'COMPLETED') toast.success('✅ Pesanan selesai dan siap disajikan!');
+      if (variables.status === 'COOKING') toastInfo('Pesanan mulai dimasak!');
+      if (variables.status === 'COMPLETED') toastSuccess('Pesanan selesai dan siap disajikan!');
       queryClient.invalidateQueries({ queryKey: ['activeOrders'] });
     },
     onError: () => {
-      toast.error('Gagal memperbarui status pesanan');
+      toastError('Gagal memperbarui status pesanan');
     },
   });
 
   return (
-    <div className="flex flex-col gap-5 h-[calc(100dvh-5rem)] overflow-hidden bg-[#FFFDF7] dark:bg-[#18181B]">
+    <div className="flex flex-col gap-4 sm:gap-5 h-[calc(100dvh-6rem)] sm:h-[calc(100dvh-7rem)] lg:h-[calc(100dvh-8rem)] overflow-hidden bg-[#FFFDF7] dark:bg-[#18181B]">
 
       {/* Header dengan tombol toggle suara */}
       <div className="flex items-center justify-between shrink-0 animate-fade-in-up">
         <div className="flex items-center gap-3">
-          <div className={`flex h-10 w-10 shrink-0 items-center justify-center border-2 border-[#18181B] shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7] ${pendingOrders.length > 0 ? 'bg-[#C9A227] animate-pulse' : 'bg-[#7F1D1D]'} hover-scale-bounce`}>
-            <ChefHat className={`h-5 w-5 ${pendingOrders.length > 0 ? 'text-[#18181B]' : 'text-[#FFFDF7]'}`} />
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center border-2 border-[#18181B] shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7] ${pendingOrders.length > 0 ? 'bg-[#C9A227] animate-pulse' : 'bg-[#7F1D1D]'} hover-scale-bounce shape-hexagon`} style={{ animationDuration: '20s' }}>
+            <ChefHat className={`h-5 w-5 ${pendingOrders.length > 0 ? 'text-[#18181B] dark:text-[#FFFDF7]' : 'text-[#FFFDF7]'}`} />
           </div>
           <div>
-            <h1 className="text-lg font-black tracking-tight text-[#18181B] dark:text-[#FFFDF7]">
+            <h1 className="text-lg font-black tracking-tight text-[#18181B] dark:text-[#FFFDF7] font-space">
               Kitchen Display
               {pendingOrders.length > 0 && (
-                <span className="ml-2 text-xs font-black text-[#C9A227] animate-pulse">
+                <span className="ml-2 text-xs font-black text-[#C9A227] animate-pulse font-jetbrains">
                   ● {pendingOrders.length} Pesanan Baru!
                 </span>
               )}
             </h1>
-            <p className="text-xs font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 mt-0.5">Setia Rasa · Dapur</p>
+            <p className="text-xs font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 mt-0.5 font-dm-sans">Setia Rasa · Dapur</p>
           </div>
         </div>
 
@@ -257,7 +277,7 @@ const { data: orders, isLoading } = useQuery<Order[]>({
             title={soundEnabled ? 'Matikan suara' : 'Aktifkan suara'}
           >
             {soundEnabled ? (
-              <Bell className="w-4 h-4 text-[#065F46] dark:text-[#34D399]" />
+              <Bell className="w-4 h-4 text-[#065F46] dark:text-[#34D399] animate-float" />
             ) : (
               <BellOff className="w-4 h-4 text-[#7F1D1D] dark:text-[#7F1D1D]" />
             )}
@@ -272,22 +292,22 @@ const { data: orders, isLoading } = useQuery<Order[]>({
 
       {/* Stat strip dengan animasi jika ada pesanan baru */}
       <div className="grid grid-cols-2 gap-3 shrink-0">
-        <div className={`border-2 px-4 py-3 shadow-[4px_4px_0px_#18181B] flex items-center gap-3 transition-all duration-300 animate-fade-in-up-delay-1 ${pendingOrders.length > 0 ? 'border-[#C9A227] bg-[#C9A227]/20 dark:border-[#C9A227] dark:shadow-[4px_4px_0px_#FFFDF7]' : 'border-[#C9A227] bg-[#C9A227]/10 dark:border-[#C9A227] dark:shadow-[4px_4px_0px_#FFFDF7]'}`}>
-          <Clock className={`w-4 h-4 shrink-0 ${pendingOrders.length > 0 ? 'text-[#7F1D1D] dark:text-[#FFFDF7]' : 'text-[#C9A227]'}`} />
+        <div className={`border-2 px-4 py-3 shadow-[4px_4px_0px_#18181B] flex items-center gap-3 transition-all duration-300 animate-fade-in-up-delay-1 ${pendingOrders.length > 0 ? 'border-[#C9A227] bg-[#C9A227]/20 dark:border-[#C9A227] dark:shadow-[4px_4px_0px_#FFFDF7]' : 'border-[#C9A227] bg-[#C9A227]/10 dark:border-[#C9A227] dark:shadow-[4px_4px_0px_#FFFDF7]'} border-glow-animated`}>
+          <Clock className={`w-4 h-4 shrink-0 ${pendingOrders.length > 0 ? 'text-[#7F1D1D] dark:text-[#FFFDF7]' : 'text-[#C9A227]'} animate-float`} />
           <div>
-            <p className={`text-2xl font-black leading-none ${pendingOrders.length > 0 ? 'text-[#7F1D1D] dark:text-[#FFFDF7]' : 'text-[#18181B] dark:text-[#C9A227]'}`}>
+            <p className={`text-2xl font-black leading-none ${pendingOrders.length > 0 ? 'text-[#7F1D1D] dark:text-[#FFFDF7]' : 'text-[#18181B] dark:text-[#C9A227]'} font-space`}>
               {pendingOrders.length}
             </p>
-            <p className="text-[11px] font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 mt-0.5 uppercase tracking-wide">Menunggu</p>
+            <p className="text-[11px] font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 mt-0.5 uppercase tracking-wide font-jetbrains">Menunggu</p>
           </div>
         </div>
-        <div className="border-2 border-[#065F46] bg-[#065F46]/10 px-4 py-3 shadow-[4px_4px_0px_#18181B] dark:border-[#34D399] dark:shadow-[4px_4px_0px_#FFFDF7] flex items-center gap-3 animate-fade-in-up-delay-2">
-          <Flame className="w-4 h-4 text-[#065F46] shrink-0 dark:text-[#34D399]" />
+        <div className="border-2 border-[#065F46] bg-[#065F46]/10 px-4 py-3 shadow-[4px_4px_0px_#18181B] dark:border-[#34D399] dark:shadow-[4px_4px_0px_#FFFDF7] flex items-center gap-3 animate-fade-in-up-delay-2 border-glow-animated">
+          <Flame className="w-4 h-4 text-[#065F46] shrink-0 dark:text-[#34D399] animate-float" style={{ animationDelay: '0.5s' }} />
           <div>
-            <p className="text-2xl font-black text-[#065F46] dark:text-[#34D399] leading-none">
+            <p className="text-2xl font-black text-[#065F46] dark:text-[#34D399] leading-none font-space">
               {cookingOrders.length}
             </p>
-            <p className="text-[11px] font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 mt-0.5 uppercase tracking-wide">Dimasak</p>
+            <p className="text-[11px] font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 mt-0.5 uppercase tracking-wide font-jetbrains">Dimasak</p>
           </div>
         </div>
       </div>
@@ -299,17 +319,17 @@ const { data: orders, isLoading } = useQuery<Order[]>({
         <div className="flex flex-col min-h-0 animate-fade-in-up-delay-3">
           <div className="flex items-center gap-2 mb-3 shrink-0">
             <span className={`w-2 h-2 border-2 shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7] ${pendingOrders.length > 0 ? 'border-[#7F1D1D] bg-[#7F1D1D] animate-pulse' : 'border-[#C9A227] bg-[#C9A227]'}`} />
-            <h2 className="text-xs font-black uppercase tracking-wider text-[#18181B]/70 dark:text-[#FFFDF7]/70">
+            <h2 className="text-xs font-black uppercase tracking-wider text-[#18181B]/70 dark:text-[#FFFDF7]/70 font-jetbrains">
               Menunggu Masak
             </h2>
-            <span className={`ml-auto text-xs font-black border-2 px-2 py-0.5 shadow-[2px_2px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] ${pendingOrders.length > 0 ? 'border-[#7F1D1D] text-[#7F1D1D] animate-pulse' : 'border-[#C9A227] text-[#C9A227] dark:border-[#C9A227]'}`}>
+            <span className={`ml-auto text-xs font-black border-2 px-2 py-0.5 shadow-[2px_2px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] ${pendingOrders.length > 0 ? 'border-[#7F1D1D] text-[#7F1D1D] animate-pulse' : 'border-[#C9A227] text-[#C9A227] dark:border-[#C9A227]'} font-jetbrains`}>
               {pendingOrders.length}
             </span>
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-3 pr-0.5">
             {isLoading && (
-              <p className="text-center text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 py-10 flex items-center justify-center gap-2">
+              <p className="text-center text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 py-10 flex items-center justify-center gap-2 font-dm-sans">
                 <span className="w-4 h-4 border-2 border-[#7F1D1D] border-t-transparent rounded-full animate-spin dark:border-[#C9A227] dark:border-t-transparent" />
                 Memuat data...
               </p>
@@ -317,7 +337,7 @@ const { data: orders, isLoading } = useQuery<Order[]>({
             {pendingOrders.length === 0 && !isLoading && (
               <div className="flex flex-col items-center justify-center py-16 border-4 border-dashed border-[#C9A227]/30 text-center">
                 <Clock className="w-7 h-7 text-[#C9A227]/40 mb-2 animate-float-premium" />
-                <p className="text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">Belum ada pesanan baru</p>
+                <p className="text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 font-dm-sans">Belum ada pesanan baru</p>
               </div>
             )}
             {pendingOrders.map((order, index) => (
@@ -337,10 +357,10 @@ const { data: orders, isLoading } = useQuery<Order[]>({
         <div className="flex flex-col min-h-0 animate-fade-in-up-delay-4">
           <div className="flex items-center gap-2 mb-3 shrink-0">
             <span className="w-2 h-2 border-2 border-[#065F46] bg-[#065F46] animate-pulse shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7]" />
-            <h2 className="text-xs font-black uppercase tracking-wider text-[#18181B]/70 dark:text-[#FFFDF7]/70">
+            <h2 className="text-xs font-black uppercase tracking-wider text-[#18181B]/70 dark:text-[#FFFDF7]/70 font-jetbrains">
               Sedang Dimasak
             </h2>
-            <span className="ml-auto text-xs font-black text-[#065F46] border-2 border-[#065F46] px-2 py-0.5 shadow-[2px_2px_0px_#18181B] dark:border-[#34D399] dark:shadow-[2px_2px_0px_#FFFDF7]">
+            <span className="ml-auto text-xs font-black text-[#065F46] border-2 border-[#065F46] px-2 py-0.5 shadow-[2px_2px_0px_#18181B] dark:border-[#34D399] dark:shadow-[2px_2px_0px_#FFFDF7] font-jetbrains">
               {cookingOrders.length}
             </span>
           </div>
@@ -349,7 +369,7 @@ const { data: orders, isLoading } = useQuery<Order[]>({
             {cookingOrders.length === 0 && !isLoading && (
               <div className="flex flex-col items-center justify-center py-16 border-4 border-dashed border-[#065F46]/30 text-center">
                 <Flame className="w-7 h-7 text-[#065F46]/40 mb-2 animate-float-premium-1" />
-                <p className="text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">Tidak ada yang sedang dimasak</p>
+                <p className="text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 font-dm-sans">Tidak ada yang sedang dimasak</p>
               </div>
             )}
             {cookingOrders.map((order, index) => (
