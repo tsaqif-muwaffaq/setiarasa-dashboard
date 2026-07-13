@@ -18,18 +18,19 @@ export default function Profile() {
   const [avatarPreview, setAvatarPreview] = useState(user?.avatar || '');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // ✅ FIX: Tambahkan | null pada tipe generik
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // State untuk toggle visibility password
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
-  // Refs untuk input fields
-  const nameInputRef = useRef<HTMLInputElement>(null);
-  const emailInputRef = useRef<HTMLInputElement>(null);
-  const phoneInputRef = useRef<HTMLInputElement>(null);
-  const oldPasswordInputRef = useRef<HTMLInputElement>(null);
-  const newPasswordInputRef = useRef<HTMLInputElement>(null);
+  // Refs untuk input fields - ✅ FIX semua dengan | null
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
+  const emailInputRef = useRef<HTMLInputElement | null>(null);
+  const phoneInputRef = useRef<HTMLInputElement | null>(null);
+  const oldPasswordInputRef = useRef<HTMLInputElement | null>(null);
+  const newPasswordInputRef = useRef<HTMLInputElement | null>(null);
 
   const [soundEnabled, setSoundEnabled] = useState(() => {
     return localStorage.getItem('sr_notification_sound') !== 'false';
@@ -44,7 +45,7 @@ export default function Profile() {
   }, []);
 
   // Fungsi untuk handle klik pada container form agar auto-focus ke input
-  const handleContainerClick = (ref: React.RefObject<HTMLInputElement>) => {
+  const handleContainerClick = (ref: React.RefObject<HTMLInputElement | null>) => {
     ref.current?.focus();
     ref.current?.select(); // Memilih semua teks agar langsung bisa diketik ulang
   };
