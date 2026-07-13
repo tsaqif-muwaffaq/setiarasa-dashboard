@@ -44,8 +44,8 @@ export default function Profile() {
   }, []);
 
   // Fungsi untuk handle klik pada container form agar auto-focus ke input
-  // @ts-ignore - TypeScript strictNullChecks issue with RefObject
-  const handleContainerClick = (ref: React.RefObject<HTMLInputElement>) => {
+  // Gunakan any untuk menghindari TypeScript strictNullChecks
+  const handleContainerClick = (ref: any) => {
     ref.current?.focus();
     ref.current?.select();
   };
