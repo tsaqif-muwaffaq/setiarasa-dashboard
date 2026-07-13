@@ -168,11 +168,18 @@ export const getPendingActionOrders = async (req: Request, res: Response): Promi
   }
 };
 
-// --- Dashboard Statistics (Untuk Owner dengan Rincian Metode Pembayaran) ---
+// order.controller.ts - UPDATE getDashboardStats (tambahkan di bagian akhir sebelum res.json)
+
 export const getDashboardStats = async (req: Request, res: Response): Promise<void> => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    // 🔥 HITUNG KEMARIN
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayEnd = new Date(yesterday);
+    yesterdayEnd.setHours(23, 59, 59, 999);
 
     // Ambil semua order lunas/selesai untuk perhitungan omzet hari ini
     const todayOrders = await prisma.order.findMany({
@@ -182,7 +189,19 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
       }
     });
 
+    // 🔥 HITUNG OMEZ KEMARIN
+    const yesterdayOrders = await prisma.order.findMany({
+      where: {
+        createdAt: {
+          gte: yesterday,
+          lte: yesterdayEnd
+        },
+        status: { in: ['PAID', 'COOKING', 'READY', 'COMPLETED'] }
+      }
+    });
+
     const totalRevenue = todayOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+    const yesterdayRevenue = yesterdayOrders.reduce((sum, o) => sum + o.totalAmount, 0);
     const orderCount = todayOrders.length;
 
     // Hitung rincian metode pembayaran hari ini secara dinamis
@@ -266,7 +285,9 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
         orderCount,
         paymentBreakdown,
         weeklyRevenue,
-        topMenus
+        topMenus,
+        todayDate: today.toISOString().split('T')[0], // 👈 TAMBAHKAN
+        yesterdayRevenue // 👈 TAMBAHKAN
       }
     });
   } catch (error) {
@@ -297,6 +318,8 @@ export const getAllOrders = async (req: Request, res: Response): Promise<void> =
     res.status(500).json({ success: false, message: 'Gagal mengambil riwayat pesanan' });
   }
 };
+
+
 
 // --- Cek Status Pesanan Publik ---
 export const getOrderStatus = async (req: Request, res: Response): Promise<void> => {

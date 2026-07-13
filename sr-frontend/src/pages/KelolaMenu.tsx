@@ -1,10 +1,11 @@
-import { useState, useRef } from 'react'; // ← Tambahkan useRef
+// KelolaMenu.tsx - Fully Responsive Mobile Friendly
+import { useState, useRef } from 'react';
 import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGlobalLoading } from '@/components/GlobalLoadingProvider';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Search, UtensilsCrossed, ChefHat, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, UtensilsCrossed, ChefHat, X, Upload, Link, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 interface Menu {
   id: string;
@@ -15,10 +16,9 @@ interface Menu {
   imageUrl: string;
 }
 
-// ── Komponen Neubrutalism ──
 function NeoCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`border-4 border-[#18181B] bg-[#FFFDF7] shadow-[6px_6px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[6px_6px_0px_#FFFDF7] ${className}`}>
+    <div className={`border-4 border-[#18181B] dark:border-[#FFFDF7] bg-[#FFFDF7] dark:bg-[#18181B] shadow-[6px_6px_0px_#18181B] dark:shadow-[6px_6px_0px_#FFFDF7] border-glow-animated ${className}`}>
       {children}
     </div>
   );
@@ -30,7 +30,7 @@ function NeoButton({ children, onClick, className = '', disabled = false, type =
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`border-4 border-[#18181B] bg-[#7F1D1D] text-[#FFFDF7] font-black px-5 py-2.5 shadow-[6px_6px_0px_#18181B] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[2px_2px_0px_#18181B] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 dark:border-[#FFFDF7] dark:shadow-[6px_6px_0px_#FFFDF7] dark:hover:shadow-[10px_10px_0px_#FFFDF7] ${className}`}
+      className={`border-4 border-[#18181B] dark:border-[#FFFDF7] bg-[#7F1D1D] dark:bg-[#7F1D1D] text-[#FFFDF7] dark:text-[#FFFDF7] font-black px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm shadow-[4px_4px_0px_#18181B] sm:shadow-[6px_6px_0px_#18181B] dark:shadow-[4px_4px_0px_#FFFDF7] sm:dark:shadow-[6px_6px_0px_#FFFDF7] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_#18181B] sm:hover:shadow-[10px_10px_0px_#18181B] dark:hover:shadow-[6px_6px_0px_#FFFDF7] sm:dark:hover:shadow-[10px_10px_0px_#FFFDF7] active:translate-x-1 active:translate-y-1 active:shadow-[2px_2px_0px_#18181B] dark:active:shadow-[2px_2px_0px_#FFFDF7] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 ripple-button font-dm-sans ${className}`}
     >
       {children}
     </button>
@@ -40,11 +40,35 @@ function NeoButton({ children, onClick, className = '', disabled = false, type =
 function NeoInput({ className = '', ...props }: React.ComponentProps<'input'>) {
   return (
     <input
-      className={`border-2 border-[#18181B] bg-[#FFFDF7] px-3 py-2 text-sm font-bold text-[#18181B] outline-none transition-all focus:shadow-[4px_4px_0px_#7F1D1D] focus:border-[#7F1D1D] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:text-[#FFFDF7] dark:focus:shadow-[4px_4px_0px_#C9A227] dark:focus:border-[#C9A227] placeholder:text-[#18181B]/40 dark:placeholder:text-[#FFFDF7]/40 ${className}`}
+      className={`w-full border-2 border-[#18181B] bg-[#FFFDF7] px-3 py-2 text-xs sm:text-sm font-bold text-[#18181B] outline-none transition-all focus:shadow-[4px_4px_0px_#7F1D1D] focus:border-[#7F1D1D] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:text-[#FFFDF7] dark:focus:shadow-[4px_4px_0px_#C9A227] dark:focus:border-[#C9A227] placeholder:text-[#18181B]/40 dark:placeholder:text-[#FFFDF7]/40 font-dm-sans ${className}`}
       {...props}
     />
   );
 }
+
+function NeoSelect({ className = '', children, ...props }: React.ComponentProps<'select'> & { children: React.ReactNode }) {
+  return (
+    <select
+      className={`w-full border-2 border-[#18181B] bg-[#FFFDF7] px-3 py-2 text-xs sm:text-sm font-bold text-[#18181B] outline-none transition-all focus:shadow-[4px_4px_0px_#7F1D1D] focus:border-[#7F1D1D] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:text-[#FFFDF7] dark:focus:shadow-[4px_4px_0px_#C9A227] dark:focus:border-[#C9A227] font-dm-sans appearance-none ${className}`}
+      {...props}
+    >
+      {children}
+    </select>
+  );
+}
+
+// Custom toast dengan icon
+const toastSuccess = (message: string) => {
+  toast.success(message, {
+    icon: <CheckCircle className="w-4 h-4 text-[#065F46]" />,
+  });
+};
+
+const toastError = (message: string) => {
+  toast.error(message, {
+    icon: <XCircle className="w-4 h-4 text-[#7F1D1D]" />,
+  });
+};
 
 const CATEGORY_COLORS: Record<string, string> = {
   'AYAM & BEBEK': 'border-[#7F1D1D] bg-[#7F1D1D]/10 text-[#7F1D1D] dark:text-[#FFFDF7]',
@@ -70,7 +94,7 @@ export default function KelolaMenu() {
   const [editingId, setEditingId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null); // ← Gunakan useRef langsung
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [uploadMethod, setUploadMethod] = useState<'file' | 'url'>('file');
   const [imageUrlInput, setImageUrlInput] = useState('');
@@ -114,12 +138,12 @@ export default function KelolaMenu() {
   const createMutation = useMutation({
     mutationFn: async (payload: FormData) => axios.post(`${API_URL}/api/menu`, payload, axiosConfig),
     onSuccess: () => {
-      toast.success('✅ Menu baru berhasil ditambahkan!');
+      toastSuccess('Menu baru berhasil ditambahkan!');
       queryClient.invalidateQueries({ queryKey: ['menus'] });
       closeModal();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Gagal menambahkan menu');
+      toastError(error.response?.data?.message || 'Gagal menambahkan menu');
     }
   });
 
@@ -127,12 +151,12 @@ export default function KelolaMenu() {
   const editMutation = useMutation({
     mutationFn: async (payload: FormData) => axios.put(`${API_URL}/api/menu/${editingId}`, payload, axiosConfig),
     onSuccess: () => {
-      toast.success('✅ Data menu berhasil diperbarui!');
+      toastSuccess('Data menu berhasil diperbarui!');
       queryClient.invalidateQueries({ queryKey: ['menus'] });
       closeModal();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Gagal memperbarui menu');
+      toastError(error.response?.data?.message || 'Gagal memperbarui menu');
     }
   });
 
@@ -140,10 +164,10 @@ export default function KelolaMenu() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => axios.delete(`${API_URL}/api/menu/${id}`, axiosConfig),
     onSuccess: () => {
-      toast.success('✅ Menu berhasil dihapus!');
+      toastSuccess('Menu berhasil dihapus!');
       queryClient.invalidateQueries({ queryKey: ['menus'] });
     },
-    onError: () => toast.error('Gagal menghapus menu')
+    onError: () => toastError('Gagal menghapus menu')
   });
 
   const handleOpenAdd = () => {
@@ -191,7 +215,7 @@ export default function KelolaMenu() {
     if (uploadMethod === 'url') {
       const url = imageUrlInput.trim();
       if (!url) {
-        toast.error('URL gambar wajib diisi!');
+        toastError('URL gambar wajib diisi!');
         return;
       }
       
@@ -199,7 +223,7 @@ export default function KelolaMenu() {
       try {
         new URL(url);
       } catch {
-        toast.error('URL gambar tidak valid! Pastikan format URL benar.');
+        toastError('URL gambar tidak valid! Pastikan format URL benar.');
         return;
       }
 
@@ -220,13 +244,13 @@ export default function KelolaMenu() {
 
       request
         .then(() => {
-          toast.success(isEditing ? '✅ Data menu berhasil diperbarui!' : '✅ Menu baru berhasil ditambahkan!');
+          toastSuccess(isEditing ? 'Data menu berhasil diperbarui!' : 'Menu baru berhasil ditambahkan!');
           queryClient.invalidateQueries({ queryKey: ['menus'] });
           closeModal();
         })
         .catch((err) => {
           console.error('Error:', err);
-          toast.error(err.response?.data?.message || 'Gagal memproses menu');
+          toastError(err.response?.data?.message || 'Gagal memproses menu');
         })
         .finally(() => {
           setTimeout(() => hideLoading(), 300);
@@ -244,7 +268,7 @@ export default function KelolaMenu() {
     if (imageFile) {
       submitData.append('image', imageFile);
     } else if (!isEditing) {
-      toast.error('Gambar menu wajib diunggah!');
+      toastError('Gambar menu wajib diunggah!');
       return;
     }
 
@@ -274,105 +298,139 @@ export default function KelolaMenu() {
   const stokMenipis = safeMenus.filter(m => toSafeNumber(m?.stock) > 0 && toSafeNumber(m?.stock) <= 5).length;
 
   return (
-    <div className="space-y-6 pb-10 bg-[#FFFDF7] dark:bg-[#18181B]">
+    <div className="space-y-4 sm:space-y-6 pb-10 bg-[#FFFDF7] dark:bg-[#18181B] px-3 sm:px-0">
 
-      {/* Header */}
-      <NeoCard className="p-4 sm:p-6">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-          <div className="flex items-center gap-3.5">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center border-2 border-[#18181B] bg-[#C9A227] shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7]">
-              <ChefHat className="h-5 w-5 text-[#18181B]" />
+      {/* Header - Responsive */}
+      <NeoCard className="p-4 sm:p-6 corner-accent-animated">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-5">
+          <div className="flex items-center gap-3 sm:gap-3.5">
+            <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center border-2 border-[#18181B] bg-[#C9A227] shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7] shape-hexagon" style={{ animationDuration: '22s' }}>
+              <ChefHat className="h-4 w-4 sm:h-5 sm:w-5 text-[#18181B] dark:text-[#FFFDF7]" />
             </div>
             <div>
-              <p className="text-xs font-black uppercase tracking-wider text-[#7F1D1D] dark:text-[#C9A227]">
+              <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#7F1D1D] dark:text-[#C9A227] font-jetbrains">
                 Setia Rasa · Manajemen Menu
               </p>
-              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[#18181B] dark:text-[#FFFDF7]">
+              <h1 className="text-lg sm:text-2xl font-black tracking-tight text-gradient font-space">
                 Kelola Menu
               </h1>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 w-full lg:w-auto">
-            <div className="flex flex-col items-center justify-center border-2 border-[#18181B] bg-[#FFFDF7] px-4 py-2.5 shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[3px_3px_0px_#FFFDF7]">
-              <span className="text-xl font-black text-[#18181B] dark:text-[#FFFDF7] leading-none">{totalMenu}</span>
-              <span className="text-[11px] font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 mt-1">Total menu</span>
+          {/* Stats Cards - Responsive grid */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full lg:w-auto">
+            <div className="flex flex-col items-center justify-center border-2 border-[#18181B] bg-[#FFFDF7] px-2 sm:px-4 py-2 sm:py-2.5 shadow-[2px_2px_0px_#18181B] sm:shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] sm:dark:shadow-[3px_3px_0px_#FFFDF7] border-glow-animated">
+              <span className="text-base sm:text-xl font-black text-[#18181B] dark:text-[#FFFDF7] leading-none font-space">{totalMenu}</span>
+              <span className="text-[9px] sm:text-[11px] font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 mt-0.5 sm:mt-1 font-dm-sans">Total</span>
             </div>
-            <div className={`flex flex-col items-center justify-center border-2 px-4 py-2.5 shadow-[3px_3px_0px_#18181B] dark:shadow-[3px_3px_0px_#FFFDF7] ${stokHabis > 0 ? 'border-[#7F1D1D] bg-[#7F1D1D]/10' : 'border-[#18181B] bg-[#FFFDF7] dark:border-[#FFFDF7] dark:bg-[#18181B]'}`}>
-              <span className={`text-xl font-black leading-none ${stokHabis > 0 ? 'text-[#7F1D1D]' : 'text-[#18181B] dark:text-[#FFFDF7]'}`}>{stokHabis}</span>
-              <span className="text-[11px] font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 mt-1">Stok habis</span>
+            <div className={`flex flex-col items-center justify-center border-2 px-2 sm:px-4 py-2 sm:py-2.5 shadow-[2px_2px_0px_#18181B] sm:shadow-[3px_3px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] sm:dark:shadow-[3px_3px_0px_#FFFDF7] ${stokHabis > 0 ? 'border-[#7F1D1D] bg-[#7F1D1D]/10' : 'border-[#18181B] bg-[#FFFDF7] dark:border-[#FFFDF7] dark:bg-[#18181B]'} border-glow-animated`}>
+              <span className={`text-base sm:text-xl font-black leading-none ${stokHabis > 0 ? 'text-[#7F1D1D]' : 'text-[#18181B] dark:text-[#FFFDF7]'} font-space`}>{stokHabis}</span>
+              <span className="text-[9px] sm:text-[11px] font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 mt-0.5 sm:mt-1 font-dm-sans">Habis</span>
             </div>
-            <div className={`flex flex-col items-center justify-center border-2 px-4 py-2.5 shadow-[3px_3px_0px_#18181B] dark:shadow-[3px_3px_0px_#FFFDF7] ${stokMenipis > 0 ? 'border-[#C9A227] bg-[#C9A227]/20' : 'border-[#18181B] bg-[#FFFDF7] dark:border-[#FFFDF7] dark:bg-[#18181B]'}`}>
-              <span className={`text-xl font-black leading-none ${stokMenipis > 0 ? 'text-[#18181B] dark:text-[#C9A227]' : 'text-[#18181B] dark:text-[#FFFDF7]'}`}>{stokMenipis}</span>
-              <span className="text-[11px] font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 mt-1">Stok menipis</span>
+            <div className={`flex flex-col items-center justify-center border-2 px-2 sm:px-4 py-2 sm:py-2.5 shadow-[2px_2px_0px_#18181B] sm:shadow-[3px_3px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] sm:dark:shadow-[3px_3px_0px_#FFFDF7] ${stokMenipis > 0 ? 'border-[#C9A227] bg-[#C9A227]/20' : 'border-[#18181B] bg-[#FFFDF7] dark:border-[#FFFDF7] dark:bg-[#18181B]'} border-glow-animated`}>
+              <span className={`text-base sm:text-xl font-black leading-none ${stokMenipis > 0 ? 'text-[#18181B] dark:text-[#C9A227]' : 'text-[#18181B] dark:text-[#FFFDF7]'} font-space`}>{stokMenipis}</span>
+              <span className="text-[9px] sm:text-[11px] font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 mt-0.5 sm:mt-1 font-dm-sans">Menipis</span>
             </div>
           </div>
         </div>
+        <div className="decorative-line mt-3 sm:mt-4" />
       </NeoCard>
 
-      {/* Bar kontrol */}
+      {/* Bar kontrol - Responsive */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="relative w-full sm:max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#18181B]/50 dark:text-[#FFFDF7]/50" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#18181B]/50 dark:text-[#FFFDF7]/50" />
           <NeoInput
             placeholder="Cari nama menu..."
-            className="pl-9 w-full"
+            className="pl-8 sm:pl-9 w-full text-xs sm:text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
-        <NeoButton onClick={handleOpenAdd}>
-          <Plus className="w-4 h-4 mr-2 inline" /> Tambah Menu Baru
+        <NeoButton onClick={handleOpenAdd} className="w-full sm:w-auto justify-center">
+          <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 inline" /> 
+          <span className="text-xs sm:text-sm">Tambah Menu Baru</span>
         </NeoButton>
       </div>
 
-      {/* Modal */}
+      {/* Modal - Fully Responsive */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#18181B]/80 p-4">
-          <div className="w-full max-w-md border-4 border-[#18181B] bg-[#FFFDF7] shadow-[12px_12px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[12px_12px_0px_#FFFDF7] max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#18181B]/80 p-3 sm:p-4 backdrop-blur-sm animate-fade-in-up">
+          <div className="w-full max-w-md border-4 border-[#18181B] bg-[#FFFDF7] shadow-[8px_8px_0px_#18181B] sm:shadow-[12px_12px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[8px_8px_0px_#FFFDF7] sm:dark:shadow-[12px_12px_0px_#FFFDF7] max-h-[92vh] overflow-y-auto corner-accent-animated">
+            <div className="p-4 sm:p-6">
               {/* Header Modal */}
-              <div className="flex items-center justify-between mb-4 border-b-2 border-[#18181B] pb-3 dark:border-[#FFFDF7]">
-                <div className="flex items-center gap-2">
-                  <UtensilsCrossed className="w-5 h-5 text-[#7F1D1D] dark:text-[#C9A227]" />
-                  <h2 className="text-lg font-black text-[#18181B] dark:text-[#FFFDF7]">
+              <div className="flex items-center justify-between mb-3 sm:mb-4 border-b-2 border-[#18181B] pb-2 sm:pb-3 dark:border-[#FFFDF7]">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                  <UtensilsCrossed className="w-4 h-4 sm:w-5 sm:h-5 text-[#7F1D1D] dark:text-[#C9A227] animate-float flex-shrink-0" />
+                  <h2 className="text-sm sm:text-lg font-black text-[#18181B] dark:text-[#FFFDF7] font-space truncate">
                     {isEditing ? 'Edit Data Menu' : 'Tambah Menu Baru'}
                   </h2>
                 </div>
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="border-2 border-[#18181B] bg-[#FFFDF7] p-1.5 shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[5px_5px_0px_#FFFDF7]"
+                  className="border-2 border-[#18181B] bg-[#FFFDF7] p-1 sm:p-1.5 shadow-[2px_2px_0px_#18181B] sm:shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_#18181B] sm:hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] sm:dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[3px_3px_0px_#FFFDF7] sm:dark:hover:shadow-[5px_5px_0px_#FFFDF7] hover-scale-bounce flex-shrink-0"
                   aria-label="Tutup modal"
                 >
-                  <X className="w-5 h-5 text-[#18181B] dark:text-[#FFFDF7]" />
+                  <X className="w-4 h-4 sm:w-5 sm:h-5 text-[#18181B] dark:text-[#FFFDF7]" />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7]">Nama Menu</label>
-                  <NeoInput required placeholder="Contoh: Ayam Bakar" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+              <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+                {/* Nama Menu */}
+                <div className="space-y-1 sm:space-y-1.5">
+                  <label className="block text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7] font-jetbrains">
+                    Nama Menu <span className="text-[#7F1D1D] dark:text-[#C9A227]">*</span>
+                  </label>
+                  <NeoInput 
+                    required 
+                    placeholder="Contoh: Ayam Bakar" 
+                    value={formData.name} 
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="text-xs sm:text-sm"
+                  />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7]">Harga (Rp)</label>
-                    <NeoInput required type="number" placeholder="15000" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} />
+                {/* Harga & Stok - Grid 2 kolom di desktop, 1 kolom di mobile */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="space-y-1 sm:space-y-1.5">
+                    <label className="block text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7] font-jetbrains">
+                      Harga (Rp) <span className="text-[#7F1D1D] dark:text-[#C9A227]">*</span>
+                    </label>
+                    <NeoInput 
+                      required 
+                      type="number" 
+                      placeholder="15000" 
+                      value={formData.price} 
+                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      className="text-xs sm:text-sm"
+                    />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7]">Stok Awal</label>
-                    <NeoInput required type="number" placeholder="50" value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: e.target.value })} />
+                  <div className="space-y-1 sm:space-y-1.5">
+                    <label className="block text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7] font-jetbrains">
+                      Stok Awal <span className="text-[#7F1D1D] dark:text-[#C9A227]">*</span>
+                    </label>
+                    <NeoInput 
+                      required 
+                      type="number" 
+                      placeholder="50" 
+                      value={formData.stock} 
+                      onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                      className="text-xs sm:text-sm"
+                    />
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7]">Kategori</label>
-                  <select
-                    className="w-full border-2 border-[#18181B] bg-[#FFFDF7] px-3 py-2 text-sm font-bold text-[#18181B] outline-none transition-all focus:shadow-[4px_4px_0px_#7F1D1D] focus:border-[#7F1D1D] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:text-[#FFFDF7] dark:focus:shadow-[4px_4px_0px_#C9A227] dark:focus:border-[#C9A227]"
+                {/* Kategori */}
+                <div className="space-y-1 sm:space-y-1.5">
+                  <label className="block text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7] font-jetbrains">
+                    Kategori <span className="text-[#7F1D1D] dark:text-[#C9A227]">*</span>
+                  </label>
+                  <NeoSelect
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="text-xs sm:text-sm"
                   >
                     <option value="AYAM & BEBEK">AYAM & BEBEK</option>
                     <option value="IKAN & LAINNYA">IKAN & LAINNYA</option>
@@ -380,38 +438,46 @@ export default function KelolaMenu() {
                     <option value="MIE, KWETIAU, BIHUN">MIE, KWETIAU, BIHUN</option>
                     <option value="SAYUR & SOP">SAYUR & SOP</option>
                     <option value="MINUMAN">MINUMAN</option>
-                  </select>
+                  </NeoSelect>
                 </div>
 
                 {/* ── Gambar Menu dengan Toggle ── */}
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7]">
-                    Gambar Menu {isEditing ? '(Opsional)' : ''}
+                  <label className="block text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#18181B] dark:text-[#FFFDF7] font-jetbrains">
+                    Gambar Menu {isEditing ? '(Opsional)' : <span className="text-[#7F1D1D] dark:text-[#C9A227]">*</span>}
                   </label>
                   
-                  {/* Toggle buttons */}
-                  <div className="flex gap-2 border-2 border-[#18181B] p-1 dark:border-[#FFFDF7]">
+                  {/* Toggle buttons - Responsive */}
+                  <div className="flex gap-1.5 sm:gap-2 border-2 border-[#18181B] p-1 dark:border-[#FFFDF7]">
                     <button
                       type="button"
                       onClick={() => setUploadMethod('file')}
-                      className={`flex-1 py-1.5 text-xs font-black transition-all ${
+                      className={`flex-1 py-1.5 sm:py-1.5 text-[10px] sm:text-xs font-black transition-all font-dm-sans ${
                         uploadMethod === 'file'
-                          ? 'bg-[#7F1D1D] text-[#FFFDF7] border-2 border-[#18181B] shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7]'
+                          ? 'bg-[#7F1D1D] text-[#FFFDF7] border-2 border-[#18181B] shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7]'
                           : 'bg-[#FFFDF7] text-[#18181B] hover:bg-[#C9A227]/20 dark:bg-[#18181B] dark:text-[#FFFDF7] dark:hover:bg-[#C9A227]/20'
                       }`}
                     >
-                      📁 Upload File
+                      <span className="flex items-center justify-center gap-1 sm:gap-1.5">
+                        <Upload className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> 
+                        <span className="hidden xs:inline">Upload File</span>
+                        <span className="xs:hidden">File</span>
+                      </span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setUploadMethod('url')}
-                      className={`flex-1 py-1.5 text-xs font-black transition-all ${
+                      className={`flex-1 py-1.5 sm:py-1.5 text-[10px] sm:text-xs font-black transition-all font-dm-sans ${
                         uploadMethod === 'url'
-                          ? 'bg-[#7F1D1D] text-[#FFFDF7] border-2 border-[#18181B] shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7]'
+                          ? 'bg-[#7F1D1D] text-[#FFFDF7] border-2 border-[#18181B] shadow-[2px_2px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7]'
                           : 'bg-[#FFFDF7] text-[#18181B] hover:bg-[#C9A227]/20 dark:bg-[#18181B] dark:text-[#FFFDF7] dark:hover:bg-[#C9A227]/20'
                       }`}
                     >
-                      🔗 Gunakan Link
+                      <span className="flex items-center justify-center gap-1 sm:gap-1.5">
+                        <Link className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> 
+                        <span className="hidden xs:inline">Gunakan Link</span>
+                        <span className="xs:hidden">Link</span>
+                      </span>
                     </button>
                   </div>
 
@@ -423,22 +489,22 @@ export default function KelolaMenu() {
                       ref={fileInputRef}
                       onChange={(e) => setImageFile(e.target.files?.[0] || null)}
                       required={!isEditing}
-                      className="py-1 w-full"
+                      className="py-1.5 w-full text-xs"
                     />
                   )}
 
                   {/* URL Input */}
                   {uploadMethod === 'url' && (
-                    <div className="space-y-1.5">
+                    <div className="space-y-1 sm:space-y-1.5">
                       <NeoInput
                         type="url"
                         placeholder="https://example.com/gambar-menu.jpg"
                         value={imageUrlInput}
                         onChange={(e) => setImageUrlInput(e.target.value)}
-                        className="w-full"
+                        className="w-full text-xs sm:text-sm"
                         required={!isEditing}
                       />
-                      <p className="text-[10px] font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">
+                      <p className="text-[9px] sm:text-[10px] font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 font-jetbrains break-all">
                         Contoh: https://sahabatnesia.com/wp-content/uploads/2017/11/2-9.jpg
                       </p>
                     </div>
@@ -446,13 +512,13 @@ export default function KelolaMenu() {
 
                   {/* Preview link saat edit */}
                   {isEditing && formData.imageUrl && uploadMethod === 'url' && (
-                    <div className="mt-1.5 text-xs font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 flex items-center gap-2">
-                      <span>Gambar saat ini:</span>
+                    <div className="mt-1.5 text-xs font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 flex flex-wrap items-center gap-1.5 font-dm-sans">
+                      <span className="text-[10px]">Gambar saat ini:</span>
                       <a 
                         href={formData.imageUrl} 
                         target="_blank" 
                         rel="noreferrer" 
-                        className="text-[#7F1D1D] dark:text-[#C9A227] hover:underline truncate max-w-[200px]"
+                        className="text-[#7F1D1D] dark:text-[#C9A227] hover:underline truncate max-w-[150px] sm:max-w-[200px] text-[10px] sm:text-xs"
                       >
                         {formData.imageUrl}
                       </a>
@@ -460,16 +526,28 @@ export default function KelolaMenu() {
                   )}
                 </div>
 
-                <div className="pt-4 flex justify-end gap-2 border-t-2 border-[#18181B] dark:border-[#FFFDF7]">
+                {/* Tombol Aksi - Responsive */}
+                <div className="pt-3 sm:pt-4 flex flex-col sm:flex-row justify-end gap-2 border-t-2 border-[#18181B] dark:border-[#FFFDF7]">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="border-2 border-[#18181B] bg-[#FFFDF7] text-[#18181B] font-black px-4 py-2 shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:text-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[5px_5px_0px_#FFFDF7]"
+                    className="w-full sm:w-auto order-2 sm:order-1 border-2 border-[#18181B] bg-[#FFFDF7] text-[#18181B] font-black px-4 py-2 text-xs sm:text-sm shadow-[2px_2px_0px_#18181B] sm:shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_#18181B] sm:hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:text-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7] sm:dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[3px_3px_0px_#FFFDF7] sm:dark:hover:shadow-[5px_5px_0px_#FFFDF7] font-dm-sans"
                   >
                     Batal
                   </button>
-                  <NeoButton type="submit" disabled={createMutation.isPending || editMutation.isPending}>
-                    {createMutation.isPending || editMutation.isPending ? 'Menyimpan...' : 'Simpan'}
+                  <NeoButton 
+                    type="submit" 
+                    disabled={createMutation.isPending || editMutation.isPending}
+                    className="w-full sm:w-auto order-1 sm:order-2 justify-center text-xs sm:text-sm"
+                  >
+                    {createMutation.isPending || editMutation.isPending ? (
+                      <>
+                        <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2" />
+                        Menyimpan...
+                      </>
+                    ) : (
+                      'Simpan'
+                    )}
                   </NeoButton>
                 </div>
               </form>
@@ -478,19 +556,19 @@ export default function KelolaMenu() {
         </div>
       )}
 
-      {/* Daftar Menu */}
+      {/* Daftar Menu - Responsive Grid */}
       {isLoading ? (
-        <div className="flex items-center justify-center gap-2 py-20 text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50">
-          <span className="w-4 h-4 rounded-full border-2 border-[#7F1D1D] border-t-transparent animate-spin dark:border-[#C9A227] dark:border-t-transparent" />
+        <div className="flex items-center justify-center gap-2 py-16 sm:py-20 text-xs sm:text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 font-dm-sans">
+          <span className="w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 border-[#7F1D1D] border-t-transparent animate-spin dark:border-[#C9A227] dark:border-t-transparent" />
           Memuat data menu...
         </div>
       ) : filteredMenus?.length === 0 ? (
-        <div className="text-center py-20 border-4 border-dashed border-[#18181B]/30 dark:border-[#FFFDF7]/30 text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 bg-[#FFFDF7] dark:bg-[#18181B]">
-          <UtensilsCrossed className="w-8 h-8 mx-auto mb-3 text-[#C9A227]/50" />
+        <div className="text-center py-16 sm:py-20 border-4 border-dashed border-[#18181B]/30 dark:border-[#FFFDF7]/30 text-xs sm:text-sm font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 bg-[#FFFDF7] dark:bg-[#18181B] font-dm-sans">
+          <UtensilsCrossed className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 sm:mb-3 text-[#C9A227]/50 animate-float" />
           {searchTerm ? `Tidak ada menu yang cocok dengan "${searchTerm}".` : 'Belum ada menu. Tambahkan menu pertama Anda.'}
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
           {filteredMenus.map((menu, index) => {
             const menuName = menu?.name || 'Menu';
             const menuCategory = menu?.category || 'LAINNYA';
@@ -500,7 +578,7 @@ export default function KelolaMenu() {
             return (
               <div
                 key={menu?.id || `${menuName}-${index}`}
-                className={`border-4 border-[#18181B] bg-[#FFFDF7] shadow-[6px_6px_0px_#18181B] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[6px_6px_0px_#FFFDF7] dark:hover:shadow-[10px_10px_0px_#FFFDF7] ${menuStock <= 0 ? 'opacity-70' : ''}`}
+                className={`border-4 border-[#18181B] bg-[#FFFDF7] shadow-[4px_4px_0px_#18181B] sm:shadow-[6px_6px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_#18181B] sm:hover:shadow-[10px_10px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[4px_4px_0px_#FFFDF7] sm:dark:shadow-[6px_6px_0px_#FFFDF7] dark:hover:shadow-[6px_6px_0px_#FFFDF7] sm:dark:hover:shadow-[10px_10px_0px_#FFFDF7] ${menuStock <= 0 ? 'opacity-70' : ''} border-glow-animated hover-scale-bounce`}
               >
                 <div className="relative">
                   <div className="aspect-square overflow-hidden bg-[#E7D9B8]">
@@ -513,44 +591,44 @@ export default function KelolaMenu() {
                       }}
                     />
                     {menuStock <= 0 && (
-                      <div className="absolute top-2 right-2 z-10 border-2 border-[#18181B] bg-[#7F1D1D] text-[#FFFDF7] text-[10px] font-black px-2 py-1 shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7]">
+                      <div className="absolute top-1 right-1 sm:top-2 sm:right-2 z-10 border-2 border-[#18181B] bg-[#7F1D1D] text-[#FFFDF7] text-[8px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5 sm:py-1 shadow-[2px_2px_0px_#18181B] sm:shadow-[3px_3px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7] sm:dark:shadow-[3px_3px_0px_#FFFDF7] font-jetbrains">
                         HABIS
                       </div>
                     )}
                   </div>
 
-                  {/* Overlay aksi */}
-                  <div className="absolute inset-0 bg-[#18181B]/60 opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+                  {/* Overlay aksi - Responsive */}
+                  <div className="absolute inset-0 bg-[#18181B]/60 opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1.5 sm:gap-2">
                     <button
-                      className="border-2 border-[#18181B] bg-[#FFFDF7] p-2 shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[5px_5px_0px_#FFFDF7]"
+                      className="border-2 border-[#18181B] bg-[#FFFDF7] p-1.5 sm:p-2 shadow-[2px_2px_0px_#18181B] sm:shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_#18181B] sm:hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:bg-[#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] sm:dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[3px_3px_0px_#FFFDF7] sm:dark:hover:shadow-[5px_5px_0px_#FFFDF7] hover-scale-bounce"
                       onClick={() => handleOpenEdit(menu)}
                       title="Edit Menu"
                     >
-                      <Pencil className="w-3.5 h-3.5 text-[#18181B] dark:text-[#FFFDF7]" />
+                      <Pencil className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#18181B] dark:text-[#FFFDF7]" />
                     </button>
                     <button
-                      className="border-2 border-[#18181B] bg-[#7F1D1D] p-2 shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[5px_5px_0px_#FFFDF7]"
+                      className="border-2 border-[#18181B] bg-[#7F1D1D] p-1.5 sm:p-2 shadow-[2px_2px_0px_#18181B] sm:shadow-[3px_3px_0px_#18181B] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_#18181B] sm:hover:shadow-[5px_5px_0px_#18181B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:border-[#FFFDF7] dark:shadow-[2px_2px_0px_#FFFDF7] sm:dark:shadow-[3px_3px_0px_#FFFDF7] dark:hover:shadow-[3px_3px_0px_#FFFDF7] sm:dark:hover:shadow-[5px_5px_0px_#FFFDF7] hover-scale-bounce"
                       onClick={() => handleDelete(menu.id, menuName)}
                       title="Hapus Menu"
                     >
-                      <Trash2 className="w-3.5 h-3.5 text-[#FFFDF7]" />
+                      <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#FFFDF7]" />
                     </button>
                   </div>
                 </div>
 
-                <div className="p-3 space-y-2">
+                <div className="p-2 sm:p-3 space-y-1.5 sm:space-y-2">
                   <div>
-                    <h3 className="font-black text-sm line-clamp-1 text-[#18181B] dark:text-[#FFFDF7]">{menuName}</h3>
-                    <span className={`inline-block mt-1 text-[10px] font-black px-2 py-0.5 border-2 shadow-[2px_2px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] ${CATEGORY_COLORS[menuCategory] || 'border-[#18181B] bg-[#E7D9B8] text-[#18181B]'}`}>
+                    <h3 className="font-black text-[11px] sm:text-sm line-clamp-1 text-[#18181B] dark:text-[#FFFDF7] font-space">{menuName}</h3>
+                    <span className={`inline-block mt-0.5 sm:mt-1 text-[8px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5 border-2 shadow-[2px_2px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] ${CATEGORY_COLORS[menuCategory] || 'border-[#18181B] bg-[#E7D9B8] text-[#18181B]'} font-jetbrains truncate max-w-full`}>
                       {menuCategory}
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center pt-2 border-t-2 border-[#18181B] dark:border-[#FFFDF7]">
-                    <p className="text-[#7F1D1D] dark:text-[#C9A227] font-black text-sm">
+                  <div className="flex justify-between items-center pt-1.5 sm:pt-2 border-t-2 border-[#18181B] dark:border-[#FFFDF7]">
+                    <p className="text-[#7F1D1D] dark:text-[#C9A227] font-black text-[11px] sm:text-sm font-jetbrains">
                       Rp {menuPrice.toLocaleString('id-ID')}
                     </p>
-                    <span className={`text-xs font-black px-2 py-0.5 border-2 shadow-[2px_2px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] ${menuStock <= 0 ? 'border-[#7F1D1D] bg-[#7F1D1D]/10 text-[#7F1D1D]' : menuStock <= 5 ? 'border-[#C9A227] bg-[#C9A227]/20 text-[#18181B] dark:text-[#C9A227]' : 'border-[#065F46] bg-[#065F46]/10 text-[#065F46]'}`}>
+                    <span className={`text-[9px] sm:text-xs font-black px-1.5 sm:px-2 py-0.5 border-2 shadow-[2px_2px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] ${menuStock <= 0 ? 'border-[#7F1D1D] bg-[#7F1D1D]/10 text-[#7F1D1D]' : menuStock <= 5 ? 'border-[#C9A227] bg-[#C9A227]/20 text-[#18181B] dark:text-[#C9A227]' : 'border-[#065F46] bg-[#065F46]/10 text-[#065F46]'} font-jetbrains`}>
                       {menuStock} stok
                     </span>
                   </div>

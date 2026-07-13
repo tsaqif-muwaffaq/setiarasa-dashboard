@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
+import { FloatingShapes } from '@/components/FloatingShapes';
 
 // Halaman & Layout Utama
 import Login from './pages/Login';
@@ -18,8 +19,14 @@ import Profile from './pages/Profile';
 function App() {
   return (
     <>
-      {/* Pattern background global dengan animasi */}
-      <div className="fixed inset-0 bg-pattern bg-dot-grid pointer-events-none z-0" />
+      {/* Floating Shapes Dekoratif Global */}
+      <FloatingShapes />
+      
+      {/* Animated Grid Overlay */}
+      <div className="animated-grid-overlay" />
+      
+      {/* Animated Dots Overlay */}
+      <div className="animated-dots-overlay" />
       
       <div className="relative z-10">
         <Toaster position="top-right" richColors />

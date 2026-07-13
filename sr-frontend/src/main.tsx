@@ -1,3 +1,5 @@
+// src/main.tsx
+
 import { Suspense, lazy, useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter as Router } from 'react-router-dom';
@@ -5,6 +7,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { GlobalLoadingProvider } from '@/components/GlobalLoadingProvider';
+import { CustomCursor } from '@/components/CustomCursor';
+import { loadMidtransSnap } from '@/utils/midtrans';
 import './index.css';
 
 const App = lazy(() => import('./App'));
@@ -19,7 +23,7 @@ const queryClient = new QueryClient({
   },
 });
 
-// ── Loading Screen Component (Inline) ──
+// ── Loading Screen ──
 function LoadingScreen({ message = 'Memuat data...' }: { message?: string }) {
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#18181B]/95 backdrop-blur-sm">
@@ -36,7 +40,7 @@ function LoadingScreen({ message = 'Memuat data...' }: { message?: string }) {
           />
         </div>
         
-        <h1 className="text-2xl font-black text-[#FFFDF7] tracking-tight">
+        <h1 className="text-2xl font-black text-[#FFFDF7] tracking-tight font-space">
           Setia Rasa
         </h1>
         
@@ -55,7 +59,7 @@ function LoadingScreen({ message = 'Memuat data...' }: { message?: string }) {
           <span className="w-2 h-2 rounded-full bg-[#C9A227] animate-bounce" style={{ animationDelay: '300ms' }} />
         </div>
         
-        <p className="text-[10px] font-bold text-[#FFFDF7]/30 mt-4 tracking-wider">
+        <p className="text-[10px] font-bold text-[#FFFDF7]/30 mt-4 tracking-wider font-jetbrains">
           POS System v2.0
         </p>
       </div>
@@ -64,21 +68,59 @@ function LoadingScreen({ message = 'Memuat data...' }: { message?: string }) {
 }
 
 function AppWrapper() {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isAppLoading, setIsAppLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [midtransReady, setMidtransReady] = useState(false);
+  const [midtransError, setMidtransError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // ── Load Midtrans ──
+  useEffect(() => {
+    const loadMidtrans = async () => {
+      try {
+        console.log('[Midtrans] Loading Snap...');
+        await loadMidtransSnap();
+        console.log('[Midtrans] Snap loaded successfully');
+        setMidtransReady(true);
+      } catch (error) {
+        console.error('[Midtrans] Failed to load Snap:', error);
+        setMidtransError(error instanceof Error ? error.message : 'Unknown error');
+        // Tetap lanjut, user bisa bayar tunai
+        setMidtransReady(true);
+      }
+    };
+
+    loadMidtrans();
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setIsLoading(false);
+      setIsAppLoading(false);
     }, 600);
     return () => clearTimeout(timer);
   }, []);
 
-  if (isLoading) {
-    return <LoadingScreen message="Mempersiapkan sistem..." />;
+  // Tampilkan loading jika app atau midtrans belum siap
+  if (isAppLoading || !midtransReady) {
+    const message = isAppLoading 
+      ? 'Mempersiapkan sistem...' 
+      : midtransError 
+        ? 'Memuat pembayaran...' 
+        : 'Memuat pembayaran...';
+    return <LoadingScreen message={message} />;
   }
 
   return (
     <Suspense fallback={<LoadingScreen message="Memuat aplikasi..." />}>
+      <CustomCursor enabled={!isMobile} />
       <App />
     </Suspense>
   );
