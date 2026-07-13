@@ -1,9 +1,11 @@
-// Dashboard.tsx - Fully Responsive Mobile Friendly
-import { useState, useEffect, useCallback } from 'react';
+// Dashboard.tsx - Full Version with GSAP Animations
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGlobalLoading } from '@/components/GlobalLoadingProvider';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 import { 
   DollarSign, 
   ShoppingBag, 
@@ -29,6 +31,7 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
+// ── INTERFACES ──
 interface WeeklyRevenue {
   name: string;
   total: number;
@@ -40,8 +43,6 @@ interface TopMenu {
   category: string;
   sold: number;
   revenue: number;
-  image?: string;
-  imageUrl?: string;
 }
 
 interface PaymentBreakdown {
@@ -89,7 +90,6 @@ const toSafeNumber = (value: unknown): number => {
   return Number.isFinite(num) ? num : 0;
 };
 
-// Helper: Format tanggal Indonesia
 const formatDateIndonesia = (date: Date) => {
   return date.toLocaleDateString('id-ID', {
     weekday: 'long',
@@ -99,24 +99,7 @@ const formatDateIndonesia = (date: Date) => {
   });
 };
 
-// ── Komponen Neubrutalism ──
-function NeoCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`border-4 border-[#18181B] dark:border-[#FFFDF7] bg-[#FFFDF7] dark:bg-[#18181B] shadow-[4px_4px_0px_#18181B] sm:shadow-[6px_6px_0px_#18181B] dark:shadow-[4px_4px_0px_#FFFDF7] sm:dark:shadow-[6px_6px_0px_#FFFDF7] card-lift border-glow-animated ${className}`}>
-      {children}
-    </div>
-  );
-}
-
-function NeoBadge({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return (
-    <span className={`inline-flex items-center border-2 border-[#18181B] dark:border-[#FFFDF7] px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-black shadow-[2px_2px_0px_#18181B] sm:shadow-[3px_3px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] sm:dark:shadow-[3px_3px_0px_#FFFDF7] ${className}`}>
-      {children}
-    </span>
-  );
-}
-
-// ── Komponen Trend Indicator (Pakai Icon, Bukan Emoji) ──
+// ── COMPONENTS ──
 function TrendIndicator({ value }: { value: number }) {
   if (value > 0) {
     return (
@@ -141,6 +124,181 @@ function TrendIndicator({ value }: { value: number }) {
   );
 }
 
+function NeoBadge({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <span className={`inline-flex items-center border-2 border-[#18181B] dark:border-[#FFFDF7] px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-black shadow-[2px_2px_0px_#18181B] sm:shadow-[3px_3px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] sm:dark:shadow-[3px_3px_0px_#FFFDF7] ${className}`}>
+      {children}
+    </span>
+  );
+}
+
+// ── NEO CARD WITH GSAP ──
+function NeoCard({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    if (!cardRef.current) return;
+    
+    gsap.from(cardRef.current, {
+      opacity: 0,
+      y: 80,
+      scale: 0.85,
+      rotationX: 10,
+      duration: 0.8,
+      delay: delay || 0,
+      ease: 'power4.out',
+      clearProps: 'transform'
+    });
+  }, [delay]);
+
+  return (
+    <div ref={cardRef} className={`border-4 border-[#18181B] dark:border-[#FFFDF7] bg-[#FFFDF7] dark:bg-[#18181B] shadow-[4px_4px_0px_#18181B] sm:shadow-[6px_6px_0px_#18181B] dark:shadow-[4px_4px_0px_#FFFDF7] sm:dark:shadow-[6px_6px_0px_#FFFDF7] card-lift border-glow-animated ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+// ── METRIC CARD WITH GSAP ──
+function MetricCard({ 
+  title, 
+  value, 
+  sub, 
+  icon: Icon, 
+  bgColor, 
+  iconColor,
+  trend,
+  showTrend,
+  delay = 0,
+}: { 
+  title: string;
+  value: string | React.ReactNode;
+  sub: string;
+  icon: any;
+  bgColor: string;
+  iconColor: string;
+  trend?: number;
+  showTrend?: boolean;
+  delay?: number;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const valueRef = useRef<HTMLParagraphElement>(null);
+  const iconRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    if (!cardRef.current) return;
+
+    const tl = gsap.timeline({ defaults: { ease: 'power4.out' } });
+
+    tl.from(cardRef.current, {
+      opacity: 0,
+      y: 100,
+      scale: 0.8,
+      duration: 0.9,
+      delay: delay,
+    })
+    .from(iconRef.current, {
+      scale: 0,
+      rotation: -180,
+      duration: 0.6,
+      ease: 'back.out(2.5)',
+    }, '-=0.5')
+    .from(valueRef.current, {
+      opacity: 0,
+      y: 30,
+      duration: 0.5,
+    }, '-=0.3');
+  }, [delay]);
+
+  const handleMouseEnter = () => {
+    if (cardRef.current) {
+      gsap.to(cardRef.current, {
+        y: -12,
+        scale: 1.03,
+        boxShadow: '12px 12px 0px #18181B',
+        duration: 0.3,
+        ease: 'power2.out',
+        overwrite: 'auto'
+      });
+    }
+    if (iconRef.current) {
+      gsap.to(iconRef.current, {
+        scale: 1.3,
+        rotation: 15,
+        duration: 0.4,
+        ease: 'back.out(2)',
+        overwrite: 'auto'
+      });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (cardRef.current) {
+      gsap.to(cardRef.current, {
+        y: 0,
+        scale: 1,
+        boxShadow: '4px 4px 0px #18181B',
+        duration: 0.3,
+        ease: 'power2.out',
+        overwrite: 'auto'
+      });
+    }
+    if (iconRef.current) {
+      gsap.to(iconRef.current, {
+        scale: 1,
+        rotation: 0,
+        duration: 0.3,
+        ease: 'back.out(2)',
+        overwrite: 'auto'
+      });
+    }
+  };
+
+  return (
+    <div 
+      ref={cardRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className="h-full"
+    >
+      <div className="h-full p-3 sm:p-5 border-4 border-[#18181B] dark:border-[#FFFDF7] bg-[#FFFDF7] dark:bg-[#18181B] shadow-[4px_4px_0px_#18181B] sm:shadow-[6px_6px_0px_#18181B] dark:shadow-[4px_4px_0px_#FFFDF7] sm:dark:shadow-[6px_6px_0px_#FFFDF7] card-lift border-glow-animated corner-accent">
+        <div className="flex flex-col h-full">
+          <div className="flex items-start justify-between">
+            <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#18181B]/50 dark:text-[#FFFDF7]/50 font-dm-sans">
+              {title}
+            </p>
+            <div 
+              ref={iconRef}
+              className={`flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center border-2 border-[#18181B] dark:border-[#FFFDF7] ${bgColor} shadow-[2px_2px_0px_#18181B] sm:shadow-[3px_3px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] sm:dark:shadow-[3px_3px_0px_#FFFDF7] hover-scale-bounce ml-2 sm:ml-3`}
+            >
+              <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${iconColor}`} />
+            </div>
+          </div>
+
+          <div className="mt-1.5 sm:mt-2 flex-1">
+            {typeof value === 'string' ? (
+              <p ref={valueRef} className="text-xl sm:text-2xl md:text-3xl font-black text-[#18181B] dark:text-[#FFFDF7] font-space truncate">
+                {value}
+              </p>
+            ) : (
+              value
+            )}
+          </div>
+
+          <div className="mt-0.5 sm:mt-1 flex items-center flex-wrap gap-1 sm:gap-1.5 min-h-[16px] sm:min-h-[20px]">
+            <p className="text-[10px] sm:text-xs font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 font-dm-sans truncate">
+              {sub}
+            </p>
+            {showTrend && trend !== 0 && (
+              <TrendIndicator value={trend || 0} />
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MAIN DASHBOARD ──
 export default function Dashboard() {
   const { showLoading, hideLoading } = useGlobalLoading();
   const queryClient = useQueryClient();
@@ -151,8 +309,56 @@ export default function Dashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentDay, setCurrentDay] = useState<string>(formatDateIndonesia(new Date()));
 
-  // ── Auto Reset Setiap Jam 00 ──
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const refreshButtonRef = useRef<HTMLButtonElement>(null);
+  const paymentGridRef = useRef<HTMLDivElement>(null);
+
+  // ── ANIMASI REFRESH ──
+  const animateRefresh = () => {
+    if (refreshButtonRef.current) {
+      gsap.to(refreshButtonRef.current, {
+        rotation: 720,
+        scale: 1.3,
+        duration: 0.8,
+        ease: 'power2.inOut',
+        onComplete: () => {
+          gsap.to(refreshButtonRef.current, {
+            rotation: 0,
+            scale: 1,
+            duration: 0.3,
+            ease: 'back.out(2)'
+          });
+        }
+      });
+    }
+  };
+
+  // ── ANIMASI PAYMENT GRID ──
+  useGSAP(() => {
+    if (!paymentGridRef.current) return;
+    
+    const items = paymentGridRef.current.children;
+    gsap.from(items, {
+      opacity: 0,
+      y: 60,
+      scale: 0.7,
+      rotationX: 20,
+      duration: 0.7,
+      stagger: 0.08,
+      delay: 0.5,
+      ease: 'back.out(1.7)',
+      clearProps: 'transform'
+    });
+  }, []);
+
+  // ── RESET MIDNIGHT ──
   const resetAtMidnight = useCallback(() => {
+    if (resetTimerRef.current) {
+      clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = null;
+    }
+
     const now = new Date();
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -162,39 +368,55 @@ export default function Dashboard() {
     
     console.log(`[Dashboard] Data akan di-reset dalam ${Math.floor(msUntilMidnight / 60000)} menit`);
     
-    return setTimeout(() => {
-      console.log('[Dashboard] Reset data tengah malam!');
+    resetTimerRef.current = setTimeout(() => {
+      console.log('[Dashboard] ⏰ Reset data tengah malam!');
       setCurrentDay(formatDateIndonesia(new Date()));
-      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
-      queryClient.invalidateQueries({ queryKey: ['salesTrend', salesPeriod] });
       setLastUpdated(new Date());
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['salesTrend'] });
       resetAtMidnight();
     }, msUntilMidnight);
-  }, [queryClient, salesPeriod]);
+  }, [queryClient]);
 
   useEffect(() => {
-    const timer = resetAtMidnight();
-    return () => clearTimeout(timer);
+    resetAtMidnight();
+    return () => {
+      if (resetTimerRef.current) {
+        clearTimeout(resetTimerRef.current);
+        resetTimerRef.current = null;
+      }
+    };
   }, [resetAtMidnight]);
 
-  // ── Cek setiap menit apakah hari sudah berganti ──
+  // ── CHECK DAY CHANGE ──
   useEffect(() => {
-    const checkDayChange = setInterval(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    intervalRef.current = setInterval(() => {
       const today = formatDateIndonesia(new Date());
       if (today !== currentDay) {
-        console.log('[Dashboard] Hari berganti, refresh data...');
+        console.log('[Dashboard] 🌅 Hari berganti, refresh data...');
         setCurrentDay(today);
-        queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
-        queryClient.invalidateQueries({ queryKey: ['salesTrend', salesPeriod] });
         setLastUpdated(new Date());
+        queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+        queryClient.invalidateQueries({ queryKey: ['salesTrend'] });
       }
     }, 60000);
 
-    return () => clearInterval(checkDayChange);
-  }, [currentDay, queryClient, salesPeriod]);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [currentDay, queryClient]);
 
-  // ── Manual Refresh ──
+  // ── MANUAL REFRESH ──
   const handleManualRefresh = async () => {
+    animateRefresh();
     setIsRefreshing(true);
     setCurrentDay(formatDateIndonesia(new Date()));
     await Promise.all([
@@ -205,6 +427,11 @@ export default function Dashboard() {
     setIsRefreshing(false);
   };
 
+  useEffect(() => {
+    console.log(`[Dashboard] Current day: ${currentDay}, Last updated: ${lastUpdated.toLocaleTimeString()}`);
+  }, [currentDay, lastUpdated]);
+
+  // ── QUERIES ──
   const { data: stats, isLoading, error } = useQuery<DashboardStats>({
     queryKey: ['dashboardStats'],
     queryFn: async () => {
@@ -285,12 +512,9 @@ export default function Dashboard() {
   });
 
   const safeStats = stats || emptyDashboardStats;
-  
   const rawWeeklyData = Array.isArray(safeStats.weeklyRevenue) ? safeStats.weeklyRevenue : [];
   const todayName = new Date().toLocaleDateString('id-ID', { weekday: 'short' });
   const todayData = rawWeeklyData.filter(item => item.name === todayName);
-  const todayRevenue = todayData.length > 0 ? todayData[0].total : 0;
-  
   const orderCount = toSafeNumber(safeStats.orderCount);
   const totalRevenue = toSafeNumber(safeStats.totalRevenue);
   const averageOrderValue = orderCount > 0 ? totalRevenue / orderCount : 0;
@@ -306,12 +530,10 @@ export default function Dashboard() {
     { value: 'monthly', label: 'Bulanan' },
   ];
 
-  // Bandingkan dengan kemarin
   const revenueDiff = yesterdayRevenue > 0 
     ? ((totalRevenue - yesterdayRevenue) / yesterdayRevenue * 100) 
     : 0;
 
-  // ── Helper untuk format sub text ──
   const formatSubText = (title: string, value: number, diff: number) => {
     if (title === 'Total Omzet Hari Ini') {
       if (value === 0) return 'Belum ada transaksi hari ini';
@@ -328,7 +550,6 @@ export default function Dashboard() {
     return '';
   };
 
-  // ── Metric Cards - Dengan Ukuran Seragam ──
   const metricCards = [
     {
       id: 'omzet',
@@ -340,6 +561,7 @@ export default function Dashboard() {
       iconColor: 'text-[#FFFDF7] dark:text-[#FFFDF7]',
       trend: revenueDiff,
       showTrend: totalRevenue > 0,
+      delay: 0.1,
     },
     {
       id: 'pesanan',
@@ -351,6 +573,7 @@ export default function Dashboard() {
       iconColor: 'text-[#FFFDF7] dark:text-[#FFFDF7]',
       trend: 0,
       showTrend: false,
+      delay: 0.2,
     },
     {
       id: 'rata-rata',
@@ -362,6 +585,7 @@ export default function Dashboard() {
       iconColor: 'text-[#18181B] dark:text-[#18181B]',
       trend: 0,
       showTrend: false,
+      delay: 0.3,
     },
     {
       id: 'status',
@@ -378,52 +602,17 @@ export default function Dashboard() {
       iconColor: 'text-[#FFFDF7] dark:text-[#18181B]',
       trend: 0,
       showTrend: false,
+      delay: 0.4,
     },
   ];
 
   const paymentMethods = [
-    { 
-      label: 'Tunai', 
-      key: 'CASH', 
-      icon: Banknote, 
-      bgColor: 'bg-[#18181B] dark:bg-[#2D3440]',
-      iconColor: 'text-[#FFFDF7] dark:text-[#FFFDF7]',
-    },
-    { 
-      label: 'QRIS', 
-      key: 'QRIS', 
-      icon: QrCode, 
-      bgColor: 'bg-[#065F46] dark:bg-[#15875F]',
-      iconColor: 'text-[#FFFDF7] dark:text-[#FFFDF7]',
-    },
-    { 
-      label: 'GoPay', 
-      key: 'GOPAY', 
-      icon: Wallet, 
-      bgColor: 'bg-[#1A73E8] dark:bg-[#2B5F9E]',
-      iconColor: 'text-[#FFFDF7] dark:text-[#FFFDF7]',
-    },
-    { 
-      label: 'ShopeePay', 
-      key: 'SHOPEEPAY', 
-      icon: Smartphone, 
-      bgColor: 'bg-[#EE4D2D] dark:bg-[#C73E1D]',
-      iconColor: 'text-[#FFFDF7] dark:text-[#FFFDF7]',
-    },
-    { 
-      label: 'Transfer', 
-      key: 'BANK_TRANSFER', 
-      icon: ArrowUpRight, 
-      bgColor: 'bg-[#C9A227] dark:bg-[#D8B13D]',
-      iconColor: 'text-[#18181B] dark:text-[#18181B]',
-    },
-    { 
-      label: 'Debit', 
-      key: 'DEBIT', 
-      icon: CreditCard, 
-      bgColor: 'bg-[#7B2FBE] dark:bg-[#9B4DE0]',
-      iconColor: 'text-[#FFFDF7] dark:text-[#FFFDF7]',
-    },
+    { label: 'Tunai', key: 'CASH', icon: Banknote, bgColor: 'bg-[#18181B] dark:bg-[#2D3440]', iconColor: 'text-[#FFFDF7] dark:text-[#FFFDF7]' },
+    { label: 'QRIS', key: 'QRIS', icon: QrCode, bgColor: 'bg-[#065F46] dark:bg-[#15875F]', iconColor: 'text-[#FFFDF7] dark:text-[#FFFDF7]' },
+    { label: 'GoPay', key: 'GOPAY', icon: Wallet, bgColor: 'bg-[#1A73E8] dark:bg-[#2B5F9E]', iconColor: 'text-[#FFFDF7] dark:text-[#FFFDF7]' },
+    { label: 'ShopeePay', key: 'SHOPEEPAY', icon: Smartphone, bgColor: 'bg-[#EE4D2D] dark:bg-[#C73E1D]', iconColor: 'text-[#FFFDF7] dark:text-[#FFFDF7]' },
+    { label: 'Transfer', key: 'BANK_TRANSFER', icon: ArrowUpRight, bgColor: 'bg-[#C9A227] dark:bg-[#D8B13D]', iconColor: 'text-[#18181B] dark:text-[#18181B]' },
+    { label: 'Debit', key: 'DEBIT', icon: CreditCard, bgColor: 'bg-[#7B2FBE] dark:bg-[#9B4DE0]', iconColor: 'text-[#FFFDF7] dark:text-[#FFFDF7]' },
   ];
 
   const rankColors = [
@@ -459,10 +648,12 @@ export default function Dashboard() {
     );
   }
 
+  // ── RENDER ──
   return (
     <div className="space-y-4 sm:space-y-6 pb-10 bg-[#FFFDF7] dark:bg-[#18181B] px-3 sm:px-0">
-      {/* Header - Responsive */}
-      <NeoCard className="p-3 sm:p-6 animate-fade-in-up corner-accent-animated">
+      
+      {/* HEADER */}
+      <NeoCard className="p-3 sm:p-6 corner-accent-animated" delay={0}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
           <div>
             <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#7F1D1D] dark:text-[#C9A227] font-jetbrains">
@@ -490,6 +681,7 @@ export default function Dashboard() {
               <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-[#065F46] dark:bg-[#34D399] animate-pulse inline-block ml-0.5 sm:ml-1 floating-dot" />
             </div>
             <button
+              ref={refreshButtonRef}
               onClick={handleManualRefresh}
               disabled={isRefreshing}
               className={`border-2 border-[#18181B] dark:border-[#FFFDF7] p-1.5 sm:p-2 shadow-[2px_2px_0px_#18181B] sm:shadow-[2px_2px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] sm:dark:shadow-[2px_2px_0px_#FFFDF7] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_#18181B] sm:hover:shadow-[4px_4px_0px_#18181B] dark:hover:shadow-[3px_3px_0px_#FFFDF7] sm:dark:hover:shadow-[4px_4px_0px_#FFFDF7] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#18181B] dark:active:shadow-[1px_1px_0px_#FFFDF7] ${isRefreshing ? 'opacity-50 cursor-not-allowed' : 'hover-scale-bounce'}`}
@@ -508,49 +700,25 @@ export default function Dashboard() {
         <div className="decorative-line mt-3 sm:mt-4" />
       </NeoCard>
 
-      {/* ── METRIC CARDS - UKURAN SERAGAM ── */}
+      {/* METRIC CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {metricCards.map((card, index) => (
-          <div key={card.id} className={`animate-fade-in-up-delay-${(index % 4) + 1}`}>
-            <NeoCard className="h-full p-3 sm:p-5 hover:shadow-[6px_6px_0px_#18181B] sm:hover:shadow-[8px_8px_0px_#18181B] dark:hover:shadow-[6px_6px_0px_#FFFDF7] sm:dark:hover:shadow-[8px_8px_0px_#FFFDF7] transition-all duration-200 corner-accent">
-              <div className="flex flex-col h-full">
-                {/* Atas: Title + Icon */}
-                <div className="flex items-start justify-between">
-                  <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#18181B]/50 dark:text-[#FFFDF7]/50 font-dm-sans">
-                    {card.title}
-                  </p>
-                  <div className={`flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center border-2 border-[#18181B] dark:border-[#FFFDF7] ${card.bgColor} shadow-[2px_2px_0px_#18181B] sm:shadow-[3px_3px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] sm:dark:shadow-[3px_3px_0px_#FFFDF7] hover-scale-bounce ml-2 sm:ml-3`}>
-                    <card.icon className={`h-4 w-4 sm:h-5 sm:w-5 ${card.iconColor}`} />
-                  </div>
-                </div>
-
-                {/* Tengah: Value */}
-                <div className="mt-1.5 sm:mt-2 flex-1">
-                  {typeof card.value === 'string' ? (
-                    <p className="text-xl sm:text-2xl md:text-3xl font-black text-[#18181B] dark:text-[#FFFDF7] font-space truncate">
-                      {card.value}
-                    </p>
-                  ) : (
-                    card.value
-                  )}
-                </div>
-
-                {/* Bawah: Sub text + Trend */}
-                <div className="mt-0.5 sm:mt-1 flex items-center flex-wrap gap-1 sm:gap-1.5 min-h-[16px] sm:min-h-[20px]">
-                  <p className="text-[10px] sm:text-xs font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 font-dm-sans truncate">
-                    {card.sub}
-                  </p>
-                  {card.showTrend && card.trend !== 0 && (
-                    <TrendIndicator value={card.trend} />
-                  )}
-                </div>
-              </div>
-            </NeoCard>
-          </div>
+        {metricCards.map((card) => (
+          <MetricCard
+            key={card.id}
+            title={card.title}
+            value={card.value}
+            sub={card.sub}
+            icon={card.icon}
+            bgColor={card.bgColor}
+            iconColor={card.iconColor}
+            trend={card.trend}
+            showTrend={card.showTrend}
+            delay={card.delay || 0}
+          />
         ))}
       </div>
 
-      {/* Rincian Kas Masuk - Responsive Grid */}
+      {/* PAYMENT METHODS */}
       <div className="animate-fade-in-up-delay-3">
         <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3 px-1">
           <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#18181B]/50 dark:text-[#FFFDF7]/50" />
@@ -558,29 +726,32 @@ export default function Dashboard() {
             Rincian Kas Masuk Hari Ini
           </p>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+        <div ref={paymentGridRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
           {paymentMethods.map(({ label, key, icon: Icon, bgColor, iconColor }) => (
-            <NeoCard key={key} className="p-2 sm:p-3 text-center hover:shadow-[6px_6px_0px_#18181B] sm:hover:shadow-[8px_8px_0px_#18181B] dark:hover:shadow-[6px_6px_0px_#FFFDF7] sm:dark:hover:shadow-[8px_8px_0px_#FFFDF7] transition-all duration-200 hover-scale-bounce border-glow-animated">
-              <div className="flex flex-col items-center">
-                <div className={`flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center border-2 border-[#18181B] dark:border-[#FFFDF7] ${bgColor} shadow-[2px_2px_0px_#18181B] sm:shadow-[3px_3px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] sm:dark:shadow-[3px_3px_0px_#FFFDF7]`}>
-                  <Icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${iconColor}`} />
+            <div key={key}>
+              <div className="p-2 sm:p-3 text-center border-4 border-[#18181B] dark:border-[#FFFDF7] bg-[#FFFDF7] dark:bg-[#18181B] shadow-[4px_4px_0px_#18181B] sm:shadow-[6px_6px_0px_#18181B] dark:shadow-[4px_4px_0px_#FFFDF7] sm:dark:shadow-[6px_6px_0px_#FFFDF7] hover:shadow-[6px_6px_0px_#18181B] sm:hover:shadow-[8px_8px_0px_#18181B] dark:hover:shadow-[6px_6px_0px_#FFFDF7] sm:dark:hover:shadow-[8px_8px_0px_#FFFDF7] transition-all duration-200 hover-scale-bounce border-glow-animated">
+                <div className="flex flex-col items-center">
+                  <div className={`flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center border-2 border-[#18181B] dark:border-[#FFFDF7] ${bgColor} shadow-[2px_2px_0px_#18181B] sm:shadow-[3px_3px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] sm:dark:shadow-[3px_3px_0px_#FFFDF7]`}>
+                    <Icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${iconColor}`} />
+                  </div>
+                  <p className="text-[10px] sm:text-xs font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 mt-1 sm:mt-2 font-dm-sans">
+                    {label}
+                  </p>
+                  <p className="text-xs sm:text-sm font-black text-[#7F1D1D] dark:text-[#C9A227] font-space">
+                    Rp {toSafeNumber(breakdown[key as keyof PaymentBreakdown]).toLocaleString('id-ID')}
+                  </p>
                 </div>
-                <p className="text-[10px] sm:text-xs font-bold text-[#18181B]/70 dark:text-[#FFFDF7]/70 mt-1 sm:mt-2 font-dm-sans">
-                  {label}
-                </p>
-                <p className="text-xs sm:text-sm font-black text-[#7F1D1D] dark:text-[#C9A227] font-space">
-                  Rp {toSafeNumber(breakdown[key as keyof PaymentBreakdown]).toLocaleString('id-ID')}
-                </p>
               </div>
-            </NeoCard>
+            </div>
           ))}
         </div>
       </div>
 
-      {/* Tren Pendapatan & Top Menu */}
+      {/* TREN & TOP MENU */}
       <div className="grid grid-cols-1 xl:grid-cols-7 gap-4 sm:gap-6">
+        
         {/* Tren Pendapatan */}
-        <NeoCard className="xl:col-span-4 p-3 sm:p-5 animate-fade-in-up-delay-2 corner-accent-animated">
+        <NeoCard className="xl:col-span-4 p-3 sm:p-5 corner-accent-animated" delay={0.2}>
           <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
             <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center border-2 border-[#18181B] dark:border-[#FFFDF7] bg-[#C9A227] dark:bg-[#D8B13D] shadow-[2px_2px_0px_#18181B] sm:shadow-[3px_3px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] sm:dark:shadow-[3px_3px_0px_#FFFDF7] hover-scale-bounce">
               <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#18181B] dark:text-[#18181B]" />
@@ -609,42 +780,9 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={weeklyData} margin={{ top: 0, right: 0, left: 20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E7D9B8" strokeOpacity={0.3} className="dark:stroke-[#2D3440] dark:stroke-opacity-30" />
-                  <XAxis 
-                    dataKey="name" 
-                    stroke="#18181B" 
-                    className="dark:stroke-[#B0B8C8]" 
-                    fontSize={9} 
-                    tickLine={false} 
-                    axisLine={false} 
-                    tickMargin={6} 
-                    tick={{ fill: '#18181B', fontWeight: 600, fontSize: 9, fontFamily: 'JetBrains Mono' }} 
-                  />
-                  <YAxis 
-                    stroke="#18181B" 
-                    className="dark:stroke-[#B0B8C8]" 
-                    fontSize={9} 
-                    tickLine={false} 
-                    axisLine={false} 
-                    tickFormatter={(value) => `Rp${value / 1000}k`} 
-                    tickMargin={6} 
-                    tick={{ fill: '#18181B', fontWeight: 600, fontSize: 9, fontFamily: 'JetBrains Mono' }} 
-                  />
-                  <Tooltip
-                    cursor={{ fill: '#E7D9B8', fillOpacity: 0.2 }}
-                    contentStyle={{ 
-                      background: '#FFFDF7', 
-                      border: '3px solid #18181B', 
-                      borderRadius: '0px', 
-                      boxShadow: '4px_4px_0px_#18181B', 
-                      color: '#18181B', 
-                      fontSize: '11px', 
-                      fontFamily: 'DM Sans', 
-                      padding: '8px 12px' 
-                    }}
-                    labelStyle={{ color: '#18181B', fontWeight: 900, fontSize: '11px', fontFamily: 'Space Grotesk' }}
-                    itemStyle={{ color: '#18181B', fontWeight: 700, fontFamily: 'DM Sans' }}
-                    formatter={(value) => [`Rp ${toSafeNumber(value).toLocaleString('id-ID')}`, 'Pendapatan']}
-                  />
+                  <XAxis dataKey="name" stroke="#18181B" className="dark:stroke-[#B0B8C8]" fontSize={9} tickLine={false} axisLine={false} tickMargin={6} tick={{ fill: '#18181B', fontWeight: 600, fontSize: 9, fontFamily: 'JetBrains Mono' }} />
+                  <YAxis stroke="#18181B" className="dark:stroke-[#B0B8C8]" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(value) => `Rp${value / 1000}k`} tickMargin={6} tick={{ fill: '#18181B', fontWeight: 600, fontSize: 9, fontFamily: 'JetBrains Mono' }} />
+                  <Tooltip cursor={{ fill: '#E7D9B8', fillOpacity: 0.2 }} contentStyle={{ background: '#FFFDF7', border: '3px solid #18181B', borderRadius: '0px', boxShadow: '4px_4px_0px_#18181B', color: '#18181B', fontSize: '11px', fontFamily: 'DM Sans', padding: '8px 12px' }} labelStyle={{ color: '#18181B', fontWeight: 900, fontSize: '11px', fontFamily: 'Space Grotesk' }} itemStyle={{ color: '#18181B', fontWeight: 700, fontFamily: 'DM Sans' }} formatter={(value) => [`Rp ${toSafeNumber(value).toLocaleString('id-ID')}`, 'Pendapatan']} />
                   <Bar dataKey="total" fill="#7F1D1D" radius={[4, 4, 0, 0]} maxBarSize={36} />
                 </BarChart>
               </ResponsiveContainer>
@@ -653,7 +791,7 @@ export default function Dashboard() {
         </NeoCard>
 
         {/* Top 5 Menu */}
-        <NeoCard className="xl:col-span-3 p-3 sm:p-5 flex flex-col animate-fade-in-up-delay-3 corner-accent-animated">
+        <NeoCard className="xl:col-span-3 p-3 sm:p-5 flex flex-col corner-accent-animated" delay={0.3}>
           <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
             <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center border-2 border-[#18181B] dark:border-[#FFFDF7] bg-[#C9A227] dark:bg-[#D8B13D] shadow-[2px_2px_0px_#18181B] sm:shadow-[3px_3px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] sm:dark:shadow-[3px_3px_0px_#FFFDF7] hover-scale-bounce">
               <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#18181B] dark:text-[#18181B]" />
@@ -717,8 +855,8 @@ export default function Dashboard() {
         </NeoCard>
       </div>
 
-      {/* Grafik Penjualan - Responsive */}
-      <NeoCard className="p-3 sm:p-5 animate-fade-in-up-delay-4 corner-accent-animated">
+      {/* GRAFIK PENJUALAN */}
+      <NeoCard className="p-3 sm:p-5 corner-accent-animated" delay={0.4}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center border-2 border-[#18181B] dark:border-[#FFFDF7] bg-[#C9A227] dark:bg-[#D8B13D] shadow-[2px_2px_0px_#18181B] sm:shadow-[3px_3px_0px_#18181B] dark:shadow-[2px_2px_0px_#FFFDF7] sm:dark:shadow-[3px_3px_0px_#FFFDF7] hover-scale-bounce">
@@ -765,55 +903,16 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={salesTrendData} margin={{ top: 10, right: 10, left: 20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E7D9B8" strokeOpacity={0.3} className="dark:stroke-[#2D3440] dark:stroke-opacity-30" />
-                <XAxis 
-                  dataKey="name" 
-                  stroke="#18181B" 
-                  className="dark:stroke-[#B0B8C8]" 
-                  fontSize={9} 
-                  tickLine={false} 
-                  axisLine={false} 
-                  tickMargin={6} 
-                  tick={{ fill: '#18181B', fontWeight: 600, fontSize: 9, fontFamily: 'JetBrains Mono' }} 
-                />
-                <YAxis 
-                  stroke="#18181B" 
-                  className="dark:stroke-[#B0B8C8]" 
-                  fontSize={9} 
-                  tickLine={false} 
-                  axisLine={false} 
-                  tickFormatter={(value) => `Rp${value / 1000}k`} 
-                  tickMargin={6} 
-                  tick={{ fill: '#18181B', fontWeight: 600, fontSize: 9, fontFamily: 'JetBrains Mono' }} 
-                />
-                <Tooltip
-                  cursor={{ stroke: '#18181B', strokeWidth: 1, strokeDasharray: '4 4' }}
-                  contentStyle={{ 
-                    background: '#FFFDF7', 
-                    border: '3px solid #18181B', 
-                    borderRadius: '0px', 
-                    boxShadow: '4px_4px_0px_#18181B', 
-                    color: '#18181B', 
-                    fontSize: '11px', 
-                    fontFamily: 'DM Sans', 
-                    padding: '8px 12px' 
-                  }}
-                  labelStyle={{ color: '#18181B', fontWeight: 900, fontSize: '11px', fontFamily: 'Space Grotesk' }}
-                  itemStyle={{ color: '#18181B', fontWeight: 700, fontFamily: 'DM Sans' }}
-                  formatter={(value) => [`Rp ${toSafeNumber(value).toLocaleString('id-ID')}`, 'Pendapatan']}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="total" 
-                  stroke="#7F1D1D" 
-                  strokeWidth={2.5} 
-                  dot={{ r: 3, strokeWidth: 2, stroke: '#7F1D1D', fill: '#FFFDF7' }} 
-                  activeDot={{ r: 5, fill: '#7F1D1D' }} 
-                />
+                <XAxis dataKey="name" stroke="#18181B" className="dark:stroke-[#B0B8C8]" fontSize={9} tickLine={false} axisLine={false} tickMargin={6} tick={{ fill: '#18181B', fontWeight: 600, fontSize: 9, fontFamily: 'JetBrains Mono' }} />
+                <YAxis stroke="#18181B" className="dark:stroke-[#B0B8C8]" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(value) => `Rp${value / 1000}k`} tickMargin={6} tick={{ fill: '#18181B', fontWeight: 600, fontSize: 9, fontFamily: 'JetBrains Mono' }} />
+                <Tooltip cursor={{ stroke: '#18181B', strokeWidth: 1, strokeDasharray: '4 4' }} contentStyle={{ background: '#FFFDF7', border: '3px solid #18181B', borderRadius: '0px', boxShadow: '4px_4px_0px_#18181B', color: '#18181B', fontSize: '11px', fontFamily: 'DM Sans', padding: '8px 12px' }} labelStyle={{ color: '#18181B', fontWeight: 900, fontSize: '11px', fontFamily: 'Space Grotesk' }} itemStyle={{ color: '#18181B', fontWeight: 700, fontFamily: 'DM Sans' }} formatter={(value) => [`Rp ${toSafeNumber(value).toLocaleString('id-ID')}`, 'Pendapatan']} />
+                <Line type="monotone" dataKey="total" stroke="#7F1D1D" strokeWidth={2.5} dot={{ r: 3, strokeWidth: 2, stroke: '#7F1D1D', fill: '#FFFDF7' }} activeDot={{ r: 5, fill: '#7F1D1D' }} />
               </LineChart>
             </ResponsiveContainer>
           )}
         </div>
       </NeoCard>
+
     </div>
   );
 }
