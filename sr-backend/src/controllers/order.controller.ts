@@ -168,18 +168,23 @@ export const getPendingActionOrders = async (req: Request, res: Response): Promi
   }
 };
 
-// order.controller.ts - UPDATE getDashboardStats (tambahkan di bagian akhir sebelum res.json)
+// ── Bagian yang perlu diupdate di order.controller.ts ──
 
+// Perbaikan getDashboardStats - TAMBAHKAN LOG VERIFIKASI
 export const getDashboardStats = async (req: Request, res: Response): Promise<void> => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    console.log(`[Dashboard Stats] Today: ${today.toISOString()}`);
 
     // 🔥 HITUNG KEMARIN
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayEnd = new Date(yesterday);
     yesterdayEnd.setHours(23, 59, 59, 999);
+
+    console.log(`[Dashboard Stats] Yesterday: ${yesterday.toISOString()} - ${yesterdayEnd.toISOString()}`);
 
     // Ambil semua order lunas/selesai untuk perhitungan omzet hari ini
     const todayOrders = await prisma.order.findMany({
@@ -188,6 +193,8 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
         status: { in: ['PAID', 'COOKING', 'READY', 'COMPLETED'] }
       }
     });
+
+    console.log(`[Dashboard Stats] Today orders found: ${todayOrders.length}`);
 
     // 🔥 HITUNG OMEZ KEMARIN
     const yesterdayOrders = await prisma.order.findMany({
@@ -199,6 +206,8 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
         status: { in: ['PAID', 'COOKING', 'READY', 'COMPLETED'] }
       }
     });
+
+    console.log(`[Dashboard Stats] Yesterday orders found: ${yesterdayOrders.length}`);
 
     const totalRevenue = todayOrders.reduce((sum, o) => sum + o.totalAmount, 0);
     const yesterdayRevenue = yesterdayOrders.reduce((sum, o) => sum + o.totalAmount, 0);
@@ -232,6 +241,8 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
       },
       select: { totalAmount: true, createdAt: true }
     });
+
+    console.log(`[Dashboard Stats] Recent orders (7 days): ${recentOrders.length}`);
 
     const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
     const weeklyDataMap = new Map();
@@ -278,17 +289,27 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
       .sort((a: any, b: any) => b.sold - a.sold)
       .slice(0, 5);
 
+    // ✅ KIRIM RESPONSE DENGAN DATA LENGKAP
+    const responseData = {
+      totalRevenue,
+      orderCount,
+      paymentBreakdown,
+      weeklyRevenue,
+      topMenus,
+      todayDate: today.toISOString().split('T')[0],
+      yesterdayRevenue
+    };
+
+    console.log(`[Dashboard Stats] Response:`, {
+      totalRevenue,
+      orderCount,
+      yesterdayRevenue,
+      todayDate: responseData.todayDate
+    });
+
     res.status(200).json({
       success: true,
-      data: {
-        totalRevenue,
-        orderCount,
-        paymentBreakdown,
-        weeklyRevenue,
-        topMenus,
-        todayDate: today.toISOString().split('T')[0], // 👈 TAMBAHKAN
-        yesterdayRevenue // 👈 TAMBAHKAN
-      }
+      data: responseData
     });
   } catch (error) {
     console.error('Error get stats:', error);
