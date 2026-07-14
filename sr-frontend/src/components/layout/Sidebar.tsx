@@ -47,7 +47,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { 
       name: 'Dapur', 
       path: '/dapur', 
-      icon: Coffee, 
+      icon: ChefHat, 
       roles: ['OWNER', 'DAPUR'],
       badge: 'KDS'
     },

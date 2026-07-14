@@ -170,6 +170,8 @@ export const getPendingActionOrders = async (req: Request, res: Response): Promi
 
 // ── Bagian yang perlu diupdate di order.controller.ts ──
 
+// ── Bagian yang perlu diupdate di order.controller.ts ──
+
 // Perbaikan getDashboardStats - TAMBAHKAN LOG VERIFIKASI
 export const getDashboardStats = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -306,6 +308,12 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
       yesterdayRevenue,
       todayDate: responseData.todayDate
     });
+
+    // ✅ TAMBAHKAN HEADER ANTI-CACHE
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
 
     res.status(200).json({
       success: true,
