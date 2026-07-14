@@ -474,22 +474,26 @@ export default function Riwayat() {
           <ChevronDown className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#18181B]/50 dark:text-[#FFFDF7]/50 pointer-events-none" />
         </div>
 
-        {/* Custom Date Picker */}
+        {/* Custom Date Picker - UPDATED with better visibility */}
         {filterPeriod === 'custom' && (
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-            <NeoInput
-              type="date"
-              value={customStartDate}
-              onChange={(e) => setCustomStartDate(e.target.value)}
-              className="w-28 sm:w-36 text-[10px] sm:text-xs py-1 sm:py-1.5"
-            />
-            <span className="text-[10px] sm:text-xs font-bold text-[#18181B]/50 dark:text-[#FFFDF7]/50 font-dm-sans">s/d</span>
-            <NeoInput
-              type="date"
-              value={customEndDate}
-              onChange={(e) => setCustomEndDate(e.target.value)}
-              className="w-28 sm:w-36 text-[10px] sm:text-xs py-1 sm:py-1.5"
-            />
+            <div className="relative">
+              <NeoInput
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="w-28 sm:w-36 text-[10px] sm:text-xs py-1 sm:py-1.5 text-[#18181B] dark:text-[#FFFDF7] bg-[#FFFDF7] dark:bg-[#18181B] border-[#18181B] dark:border-[#FFFDF7] placeholder:text-[#18181B]/40 dark:placeholder:text-[#FFFDF7]/40 [color-scheme:light] dark:[color-scheme:dark]"
+              />
+            </div>
+            <span className="text-[10px] sm:text-xs font-bold text-[#18181B] dark:text-[#FFFDF7] font-dm-sans">s/d</span>
+            <div className="relative">
+              <NeoInput
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="w-28 sm:w-36 text-[10px] sm:text-xs py-1 sm:py-1.5 text-[#18181B] dark:text-[#FFFDF7] bg-[#FFFDF7] dark:bg-[#18181B] border-[#18181B] dark:border-[#FFFDF7] placeholder:text-[#18181B]/40 dark:placeholder:text-[#FFFDF7]/40 [color-scheme:light] dark:[color-scheme:dark]"
+              />
+            </div>
           </div>
         )}
 

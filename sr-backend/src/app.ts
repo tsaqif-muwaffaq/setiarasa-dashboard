@@ -13,6 +13,18 @@ dotenv.config();
 
 const app = express();
 
+// ✅ TAMBAHKAN: Middleware Anti-Cache Global
+app.use((req, res, next) => {
+  // Nonaktifkan caching untuk semua API response
+  if (req.path.startsWith('/api/')) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+  }
+  next();
+});
+
 // Middlewares Dasar
 app.use(cors());
 app.use(express.json());
@@ -30,8 +42,6 @@ app.use('/api/payments', paymentRoutes);
 app.get('/', (req: Request, res: Response) => {
   res.send('API Setia Rasa Dashboard berjalan dengan lancar! 🚀');
 });
-
-
 
 // Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

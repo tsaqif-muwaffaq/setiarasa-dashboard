@@ -352,6 +352,42 @@ export default function Dashboard() {
     });
   }, []);
 
+  // ── FUNGSI REFRESH DATA ──
+  const refreshDashboardData = useCallback(async (showLoadingState: boolean = false) => {
+    console.log('[Dashboard] 🔄 Refreshing dashboard data...');
+    
+    if (showLoadingState) {
+      showLoading('Memperbarui data dashboard...');
+    }
+    
+    try {
+      // Hapus cache lama
+      queryClient.removeQueries({ queryKey: ['dashboardStats'] });
+      queryClient.removeQueries({ queryKey: ['salesTrend'] });
+      
+      // Invalidate dengan force refetch
+      await Promise.all([
+        queryClient.invalidateQueries({ 
+          queryKey: ['dashboardStats'],
+          refetchType: 'all'
+        }),
+        queryClient.invalidateQueries({ 
+          queryKey: ['salesTrend'],
+          refetchType: 'all'
+        })
+      ]);
+      
+      setLastUpdated(new Date());
+      console.log('[Dashboard] ✅ Data refreshed successfully');
+    } catch (error) {
+      console.error('[Dashboard] ❌ Failed to refresh data:', error);
+    } finally {
+      if (showLoadingState) {
+        setTimeout(() => hideLoading(), 300);
+      }
+    }
+  }, [queryClient, showLoading, hideLoading]);
+
   // ── RESET MIDNIGHT ──
   const resetAtMidnight = useCallback(() => {
     if (resetTimerRef.current) {
@@ -366,18 +402,25 @@ export default function Dashboard() {
     
     const msUntilMidnight = tomorrow.getTime() - now.getTime();
     
-    console.log(`[Dashboard] Data akan di-reset dalam ${Math.floor(msUntilMidnight / 60000)} menit`);
+    console.log(`[Dashboard] ⏰ Data akan di-reset dalam ${Math.floor(msUntilMidnight / 60000)} menit`);
     
-    resetTimerRef.current = setTimeout(() => {
-      console.log('[Dashboard] ⏰ Reset data tengah malam!');
-      setCurrentDay(formatDateIndonesia(new Date()));
+    resetTimerRef.current = setTimeout(async () => {
+      console.log('[Dashboard] 🌙 Midnight reset triggered!');
+      
+      // Update state
+      const newDay = formatDateIndonesia(new Date());
+      setCurrentDay(newDay);
       setLastUpdated(new Date());
-      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
-      queryClient.invalidateQueries({ queryKey: ['salesTrend'] });
+      
+      // Force refresh data
+      await refreshDashboardData(true);
+      
+      // Schedule next reset
       resetAtMidnight();
     }, msUntilMidnight);
-  }, [queryClient]);
+  }, [refreshDashboardData]);
 
+  // ── SETUP MIDNIGHT RESET ──
   useEffect(() => {
     resetAtMidnight();
     return () => {
@@ -388,7 +431,7 @@ export default function Dashboard() {
     };
   }, [resetAtMidnight]);
 
-  // ── CHECK DAY CHANGE ──
+  // ── CHECK DAY CHANGE (INTERVAL) ──
   useEffect(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -398,13 +441,11 @@ export default function Dashboard() {
     intervalRef.current = setInterval(() => {
       const today = formatDateIndonesia(new Date());
       if (today !== currentDay) {
-        console.log('[Dashboard] 🌅 Hari berganti, refresh data...');
+        console.log('[Dashboard] 🌅 Detected day change via interval, refreshing...');
         setCurrentDay(today);
-        setLastUpdated(new Date());
-        queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
-        queryClient.invalidateQueries({ queryKey: ['salesTrend'] });
+        refreshDashboardData(true);
       }
-    }, 60000);
+    }, 60000); // Cek setiap 1 menit
 
     return () => {
       if (intervalRef.current) {
@@ -412,28 +453,51 @@ export default function Dashboard() {
         intervalRef.current = null;
       }
     };
-  }, [currentDay, queryClient]);
+  }, [currentDay, refreshDashboardData]);
+
+  // ── REFRESH SAAT TAB AKTIF ──
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const today = formatDateIndonesia(new Date());
+        if (today !== currentDay) {
+          console.log('[Dashboard] 👁️ Tab focused, day changed, refreshing...');
+          setCurrentDay(today);
+          refreshDashboardData(true);
+        } else {
+          // Refresh jika data sudah stale (> 5 menit)
+          const now = new Date();
+          const diffMinutes = (now.getTime() - lastUpdated.getTime()) / 60000;
+          if (diffMinutes > 5) {
+            console.log('[Dashboard] 👁️ Tab focused, data stale (>5min), refreshing...');
+            refreshDashboardData(false);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [currentDay, lastUpdated, refreshDashboardData]);
 
   // ── MANUAL REFRESH ──
   const handleManualRefresh = async () => {
     animateRefresh();
     setIsRefreshing(true);
-    setCurrentDay(formatDateIndonesia(new Date()));
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] }),
-      queryClient.invalidateQueries({ queryKey: ['salesTrend', salesPeriod] })
-    ]);
-    setLastUpdated(new Date());
+    
+    const today = formatDateIndonesia(new Date());
+    setCurrentDay(today);
+    
+    await refreshDashboardData(true);
+    
     setIsRefreshing(false);
   };
 
-  useEffect(() => {
-    console.log(`[Dashboard] Current day: ${currentDay}, Last updated: ${lastUpdated.toLocaleTimeString()}`);
-  }, [currentDay, lastUpdated]);
-
   // ── QUERIES ──
   const { data: stats, isLoading, error } = useQuery<DashboardStats>({
-    queryKey: ['dashboardStats'],
+    queryKey: ['dashboardStats', currentDay], // ✅ Tambahkan currentDay
     queryFn: async () => {
       const isFirstLoad = !queryClient.getQueryData(['dashboardStats']);
       if (isFirstLoad) {
@@ -442,7 +506,12 @@ export default function Dashboard() {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
         const res = await axios.get(`${apiUrl}/api/orders/stats`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          },
         });
         
         const responseData = res.data?.data;
@@ -478,12 +547,13 @@ export default function Dashboard() {
     },
     refetchInterval: 30000,
     retry: 2,
-    refetchOnWindowFocus: false,
-    staleTime: 20000,
+    refetchOnWindowFocus: true, // ✅ Aktifkan
+    staleTime: 0, // ✅ Selalu stale
+    gcTime: 1000 * 60 * 5,
   });
 
   const { data: salesTrend, isLoading: isSalesTrendLoading } = useQuery<WeeklyRevenue[]>({
-    queryKey: ['salesTrend', salesPeriod],
+    queryKey: ['salesTrend', salesPeriod, currentDay], // ✅ Tambahkan currentDay
     queryFn: async () => {
       const isFirstLoad = !queryClient.getQueryData(['salesTrend', salesPeriod]);
       if (isFirstLoad) {
@@ -492,7 +562,12 @@ export default function Dashboard() {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
         const res = await axios.get(`${apiUrl}/api/orders/sales-trend`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          },
           params: { period: salesPeriod },
         });
         return Array.isArray(res.data?.data) ? res.data.data : [];
@@ -507,14 +582,14 @@ export default function Dashboard() {
     },
     refetchInterval: 30000,
     retry: 2,
-    refetchOnWindowFocus: false,
-    staleTime: 20000,
+    refetchOnWindowFocus: true, // ✅ Aktifkan
+    staleTime: 0, // ✅ Selalu stale
+    gcTime: 1000 * 60 * 5,
   });
 
   const safeStats = stats || emptyDashboardStats;
   const rawWeeklyData = Array.isArray(safeStats.weeklyRevenue) ? safeStats.weeklyRevenue : [];
   const todayName = new Date().toLocaleDateString('id-ID', { weekday: 'short' });
-  const todayData = rawWeeklyData.filter(item => item.name === todayName);
   const orderCount = toSafeNumber(safeStats.orderCount);
   const totalRevenue = toSafeNumber(safeStats.totalRevenue);
   const averageOrderValue = orderCount > 0 ? totalRevenue / orderCount : 0;
